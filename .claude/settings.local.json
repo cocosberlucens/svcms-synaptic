@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cargo test)",
       "Bash(RUST_BACKTRACE=1 cargo test test_parse_empty_commit -- --nocapture)",
-      "Bash(cargo fix:*)"
+      "Bash(cargo fix:*)",
+      "Bash(cargo:*)"
     ],
     "deny": []
   }

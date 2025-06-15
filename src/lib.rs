@@ -2,6 +2,10 @@ pub mod parser;
 pub mod memory;
 pub mod git;
 
+// Re-export for easier access
+pub use git::*;
+pub use memory::*;
+
 #[derive(Debug, Clone)]
 pub struct SvcmsCommit {
     pub sha: String,
