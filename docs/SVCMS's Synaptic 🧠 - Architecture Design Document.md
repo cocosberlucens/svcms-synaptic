@@ -142,19 +142,19 @@ CREATE VIRTUAL TABLE commits_fts USING fts5(
 
 ## Implementation Roadmap
 
-### Milestone 1: MVP Memory Sync (Week 1-2)
+### Milestone 1: MVP Memory Sync ✅ COMPLETED
 
-- [ ] Basic commit parsing
-- [ ] Memory extraction
-- [ ] Simple file placement
-- [ ] CLI with `sync` command
+- [x] Basic commit parsing
+- [x] Memory extraction
+- [x] Simple file placement
+- [x] CLI with `sync` command
 
-### Milestone 2: Enhanced Sync (Week 3-4)
+### Milestone 2: Enhanced Sync ✅ COMPLETED
 
-- [ ] Scope-based inference
-- [ ] Deduplication logic
-- [ ] Dry-run mode
-- [ ] Progress reporting
+- [x] Scope-based inference
+- [x] Deduplication logic
+- [x] Dry-run mode
+- [x] Progress reporting
 
 ### Milestone 3: Local Knowledge Store (Week 5-6)
 
