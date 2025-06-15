@@ -19,3 +19,6 @@ Thumbs.db
 
 # VSCode Workspace
 svcms-synaptic.code-workspace
+
+# .claude
+.claude/settings.local.json

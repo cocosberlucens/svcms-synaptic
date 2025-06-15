@@ -1,7 +1,7 @@
 //! Parse SVCMS-formatted commit messages
 
 use regex::Regex;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use crate::SvcmsCommit;
 
 lazy_static::lazy_static! {

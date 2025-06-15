@@ -1,6 +1,6 @@
 //! Git repository interaction
 
-use git2::{Repository, Commit};
+use git2::Repository;
 use anyhow::{Result, Context};
 use crate::SvcmsCommit;
 use crate::parser::parse_commit_message;

@@ -37,7 +37,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     
     match cli.command {
-        Commands::Sync { depth, dry_run, since } => {
+        Commands::Sync { depth, dry_run, since: _ } => {
             println!("🧠 Synaptic Memory Sync");
             println!("Processing {} commits...", depth);
             if dry_run {

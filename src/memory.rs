@@ -1,7 +1,7 @@
 //! Memory synchronization to CLAUDE.md files
 
 use std::path::PathBuf;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use crate::SvcmsCommit;
 
 /// Determine the target CLAUDE.md file for a commit
@@ -22,7 +22,7 @@ pub fn determine_memory_location(commit: &SvcmsCommit, project_root: &str) -> Pa
 }
 
 /// Sync memories from commits to CLAUDE.md files
-pub fn sync_memories(commits: Vec<SvcmsCommit>, project_root: &str, dry_run: bool) -> Result<()> {
+pub fn sync_memories(commits: Vec<SvcmsCommit>, _project_root: &str, _dry_run: bool) -> Result<()> {
     // TODO: Implement memory sync logic
     println!("Would sync {} commits with memories", 
         commits.iter().filter(|c| c.memory.is_some()).count());
