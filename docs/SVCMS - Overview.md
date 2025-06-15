@@ -136,10 +136,10 @@ SVCMS seamlessly integrates with Claude Code’s existing memory system:
 **Current Phase**: Specification and Design
 **Next Steps**:
 
-1. Finalize SVCMS specification for `~/.claude/CLAUDE.md`
-2. Develop Synaptic tool MVP
-3. Create GitHub Action for automated memory sync
-4. Test with real projects (starting with Staff Scheduling Application)
+1. [x] Finalize SVCMS specification for `~/.claude/CLAUDE.md`
+2. [ ] Develop Synaptic tool MVP
+3. [ ] Create GitHub Action for automated memory sync
+4. [ ] Test with real projects (starting with Staff Scheduling Application)
 
 -----
 
