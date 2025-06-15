@@ -16,8 +16,22 @@ pub fn determine_memory_location(commit: &SvcmsCommit, project_root: &str) -> Pa
     } else if let Some(scope) = &commit.scope {
         // Infer from scope
         match scope.as_str() {
-            "global" | "project" => PathBuf::from(project_root).join("CLAUDE.md"),
-            _ => PathBuf::from(project_root).join(format!("src/{}/CLAUDE.md", scope)),
+            // Project-wide scopes
+            "global" | "project" | "build" | "ci" | "chore" | 
+            "docs" | "test" | "tests" | "testing" | "cleanup" |
+            "workflow" | "development" | "architecture" => {
+                PathBuf::from(project_root).join("CLAUDE.md")
+            }
+            // Module-specific scopes (assume they're in src/)
+            _ => {
+                // Check if scope looks like a path (contains /)
+                if scope.contains('/') {
+                    PathBuf::from(project_root).join(format!("{}/CLAUDE.md", scope))
+                } else {
+                    // Default to src/ subdirectory
+                    PathBuf::from(project_root).join(format!("src/{}/CLAUDE.md", scope))
+                }
+            }
         }
     } else {
         // Default to project root

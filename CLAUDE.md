@@ -92,3 +92,15 @@ Tests are planned but not yet implemented. The project uses:
 ## Project Context
 
 This tool is part of the broader SVCMS (Semantic Version Control Memory System) initiative to enhance Claude Code's memory capabilities by leveraging Git's version control system with extended Conventional Commits specification.
+
+## SVCMS Memories
+
+*Automatically synced by Synaptic*
+
+- Use HashMap to group memories by file, then update each file once: feat `feat(memory): implement full memory sync functionality` (9986c3a) [memory-sync, file-io, claude-md]
+- Building tools with SVCMS creates immediate feedback loops: insight `insight(development): SVCMS enables self-documenting development process` (16c563a) [svcms, meta, development-process]
+- Always create initial commit in test repos before walking history: learned `learned(testing): git repos need initial commit for HEAD reference` (e760d70) [testing, git2, repository]
+- Use git2 Repository API and convert timestamps with Utc.timestamp_opt: feat `feat(git): implement git repository interaction module` (df565f6) [git, repository, commit-parsing, git2]
+- Prefix unused parameters with _ to avoid warnings: chore `chore(cleanup): fix all compiler warnings` (7a7256d) [cleanup, warnings, rust]
+- Both 'decision' and 'decided' are valid SVCMS commit types: fixed `fixed(parser): add 'decided' as valid SVCMS commit type` (8e65289) [parser, svcms, testing, commit-types]
+- Synaptic uses git2 for Git interaction, clap for CLI: feat `feat: initialize Synaptic project with core structure` (5d50d18) [rust, initialization, project-setup]
