@@ -16,3 +16,6 @@ Thumbs.db
 # Synaptic
 .synaptic/
 *.log
+
+# VSCode Workspace
+svcms-synaptic.code-workspace
