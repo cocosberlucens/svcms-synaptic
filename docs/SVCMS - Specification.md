@@ -214,18 +214,33 @@ The key is:
 - Just right: One meaningful insight/decision per commit
 
 This way, `git log` becomes a design decision log, and Synaptic will have rich, structured data to work with!
-## Synaptic Tool Usage (Once Available)
+## Synaptic Tool Usage
 
+**Memory Sync Mode** ✅ Available:
 ```bash
-# Query mode examples
+# Install Synaptic
+cargo install --git https://github.com/cocosberlucens/svcms-synaptic
+
+# Basic memory sync
+synaptic sync                           # Sync all memories to CLAUDE.md files
+synaptic sync --dry-run                 # Preview what would be synced
+synaptic sync --depth 50               # Process last 50 commits
+synaptic sync --since="2025-01-01"     # Process commits since date
+
+# Statistics and help
+synaptic stats                          # Show SVCMS commit statistics
+synaptic init                           # Show usage instructions
+synaptic --help                         # Full help documentation
+```
+
+**Query Mode** 🚧 Not Yet Available (Planned for Milestone 3):
+```bash
+# Future query functionality (not implemented yet)
 synaptic query "authentication errors"
 synaptic query --type="learned" --scope="database"
 synaptic query --after="2025-01-01" --tags="performance"
 
-# Memory sync mode
-synaptic sync                    # Sync all memories to appropriate CLAUDE.md files
-synaptic sync --dry-run         # Preview what would be synced
-synaptic sync --scope="auth"    # Sync only auth-related memories
+# Note: --scope filtering in sync mode is also not yet implemented
 ```
 
 ## Quality Checklist

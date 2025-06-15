@@ -22,3 +22,6 @@ svcms-synaptic.code-workspace
 
 # .claude
 .claude/settings.local.json
+
+# .serena
+.serena/project.yml

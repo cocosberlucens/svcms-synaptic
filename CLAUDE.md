@@ -72,22 +72,38 @@ Tags: <searchable keywords>
 
 ## Current Implementation Status
 
-This is an early-stage project with basic structure in place:
-- ✅ CLI framework and command structure
-- ✅ Core data types (SvcmsCommit)
-- 🚧 SVCMS commit parsing (basic pattern matching implemented)
-- 🚧 Git repository interaction (skeleton implemented)
-- 🚧 Memory synchronization (placeholder implementation)
-- ❌ Full SVCMS parsing (body, memory, location, tags extraction)
-- ❌ File writing and update logic
-- ❌ Deduplication and conflict resolution
+**✅ MVP Complete** - Memory Sync Mode fully operational:
+- ✅ Comprehensive SVCMS commit parsing with all metadata fields
+- ✅ Git repository interaction with git2 crate
+- ✅ Full memory synchronization with smart file placement
+- ✅ Idempotent updates (no duplicate memories)
+- ✅ Scope-based routing (project-wide vs module-specific)
+- ✅ CLI with sync, stats, init commands
+- ✅ Dry-run mode for safe previews
+- ✅ Comprehensive test suite
+
+**🚧 Future Milestones:**
+- 🚧 Query mode with SQLite knowledge store (Milestone 3)
+- 🚧 Advanced filtering by scope/type/tags (Milestone 4)
+
+## Installation & Usage
+
+```bash
+# Install from GitHub
+cargo install --git https://github.com/cocosberlucens/svcms-synaptic
+
+# Use in any Git repository
+synaptic sync --dry-run    # Preview memory sync
+synaptic sync              # Sync memories to CLAUDE.md files
+synaptic stats             # Show SVCMS commit statistics
+```
 
 ## Testing Strategy
 
-Tests are planned but not yet implemented. The project uses:
-- Unit tests for parsing logic
-- Integration tests for Git operations
-- `tempfile` crate for temporary repository testing
+Comprehensive test suite implemented:
+- Unit tests for SVCMS parsing logic
+- Integration tests for Git operations using temporary repositories
+- Memory placement and deduplication tests
 
 ## Project Context
 
