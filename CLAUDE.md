@@ -93,10 +93,15 @@ Tests are planned but not yet implemented. The project uses:
 
 This tool is part of the broader SVCMS (Semantic Version Control Memory System) initiative to enhance Claude Code's memory capabilities by leveraging Git's version control system with extended Conventional Commits specification.
 
+
 ## SVCMS Memories
 
 *Automatically synced by Synaptic*
 
+- Check existing content to avoid duplicate memory entries: feat `feat(memory): implement idempotency and improved scope routing` (9157340) [idempotency, deduplication, workflow, scope-routing]
+- MVP + enhanced sync features completed in initial implementation: docs `docs(roadmap): mark Milestones 1 & 2 as completed` (7ba49d9) [documentation, milestones, progress]
+- Synaptic exemplifies human-AI pair programming at its best: docs `docs(authors): add Claude as co-author in Cargo.toml` (e82b0cb) [collaboration, authors, acknowledgment]
+- Route test/build/chore scopes to project root, not src/: decision `decision(memory): route project-wide scopes to root CLAUDE.md` (d04b57b) [memory-placement, scope-routing]
 - Use HashMap to group memories by file, then update each file once: feat `feat(memory): implement full memory sync functionality` (9986c3a) [memory-sync, file-io, claude-md]
 - Building tools with SVCMS creates immediate feedback loops: insight `insight(development): SVCMS enables self-documenting development process` (16c563a) [svcms, meta, development-process]
 - Always create initial commit in test repos before walking history: learned `learned(testing): git repos need initial commit for HEAD reference` (e760d70) [testing, git2, repository]
