@@ -98,7 +98,7 @@ fn is_valid_svcms_type(commit_type: &str) -> bool {
         "feat" | "fix" | "docs" | "style" | "refactor" | 
         "perf" | "test" | "build" | "ci" | "chore" |
         // SVCMS Knowledge Types
-        "learned" | "insight" | "context" | "decision" | "memory" |
+        "learned" | "insight" | "context" | "decision" | "decided" | "memory" |
         // SVCMS Collaboration Types
         "discussed" | "explored" | "attempted" |
         // SVCMS Meta Types
