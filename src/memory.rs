@@ -19,7 +19,8 @@ pub fn determine_memory_location(commit: &SvcmsCommit, project_root: &str) -> Pa
             // Project-wide scopes
             "global" | "project" | "build" | "ci" | "chore" | 
             "docs" | "test" | "tests" | "testing" | "cleanup" |
-            "workflow" | "development" | "architecture" => {
+            "workflow" | "development" | "architecture" |
+            "authors" | "roadmap" | "memory" | "mvp" | "milestone" => {
                 PathBuf::from(project_root).join("CLAUDE.md")
             }
             // Module-specific scopes (assume they're in src/)
@@ -142,8 +143,45 @@ fn find_memories_section(content: &str) -> Option<(usize, usize)> {
     }
 }
 
+/// Check if a memory is already present in the content
+fn memory_already_exists(content: &str, memory: &Memory) -> bool {
+    // Look for the memory content and commit SHA
+    content.contains(&memory.content) && content.contains(&memory.commit_sha)
+}
+
+/// Filter out memories that are already present
+fn filter_new_memories(path: &Path, memories: &[Memory]) -> Result<Vec<Memory>> {
+    let existing_content = read_claude_md(path)?;
+    
+    let new_memories: Vec<Memory> = memories
+        .iter()
+        .filter(|memory| !memory_already_exists(&existing_content, memory))
+        .cloned()
+        .collect();
+    
+    Ok(new_memories)
+}
+
 /// Update or create CLAUDE.md with new memories
 fn update_claude_md(path: &Path, memories: &[Memory], dry_run: bool) -> Result<()> {
+    // Filter out memories that already exist
+    let new_memories = filter_new_memories(path, memories)?;
+    
+    if new_memories.is_empty() {
+        if dry_run {
+            println!("{} {} (no new memories)", 
+                "Would skip:".bright_black(), 
+                path.display()
+            );
+        } else {
+            println!("{} {} (no new memories)", 
+                "⚡ Skipped:".bright_black(), 
+                path.display()
+            );
+        }
+        return Ok(());
+    }
+    
     let existing_content = read_claude_md(path)?;
     
     // Format new memories
@@ -151,12 +189,33 @@ fn update_claude_md(path: &Path, memories: &[Memory], dry_run: bool) -> Result<(
     memory_lines.push("\n## SVCMS Memories\n\n".to_string());
     memory_lines.push("*Automatically synced by Synaptic*\n\n".to_string());
     
-    // Sort memories by timestamp (newest first)
-    let mut sorted_memories = memories.to_vec();
-    sorted_memories.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    // Sort new memories by timestamp (newest first)
+    let mut sorted_new_memories = new_memories.clone();
+    sorted_new_memories.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     
-    for memory in &sorted_memories {
-        memory_lines.push(format_memory(memory));
+    // If there are existing memories, we need to merge them properly
+    if let Some((start, end)) = find_memories_section(&existing_content) {
+        // Extract existing memories and combine with new ones
+        let existing_memories_text = &existing_content[start..end];
+        let existing_memory_lines: Vec<&str> = existing_memories_text
+            .lines()
+            .filter(|line| line.starts_with("- "))
+            .collect();
+        
+        // Add new memories first (they're newer)
+        for memory in &sorted_new_memories {
+            memory_lines.push(format_memory(memory));
+        }
+        
+        // Then add existing memories
+        for line in existing_memory_lines {
+            memory_lines.push(format!("{}\n", line));
+        }
+    } else {
+        // No existing memories section, just add new ones
+        for memory in &sorted_new_memories {
+            memory_lines.push(format_memory(memory));
+        }
     }
     
     let new_memory_section = memory_lines.join("");
@@ -206,10 +265,10 @@ fn update_claude_md(path: &Path, memories: &[Memory], dry_run: bool) -> Result<(
         file.write_all(new_content.as_bytes())
             .context("Failed to write CLAUDE.md")?;
         
-        println!("{} {} ({} memories)", 
+        println!("{} {} ({} new memories)", 
             "✓ Updated:".green(), 
             path.display(), 
-            memories.len()
+            new_memories.len()
         );
     }
     

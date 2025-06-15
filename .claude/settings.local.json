@@ -4,7 +4,10 @@
       "Bash(cargo test)",
       "Bash(RUST_BACKTRACE=1 cargo test test_parse_empty_commit -- --nocapture)",
       "Bash(cargo fix:*)",
-      "Bash(cargo:*)"
+      "Bash(cargo:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
