@@ -15,6 +15,12 @@ Synaptic bridges Git commit history with Claude Code's memory system, implementi
 
 ## Installation
 
+**Method 1: Install from GitHub (Recommended)**
+```bash
+cargo install --git https://github.com/cocosberlucens/svcms-synaptic
+```
+
+**Method 2: Clone and install locally**
 ```bash
 # Clone the repository
 git clone https://github.com/cocosberlucens/svcms-synaptic
@@ -24,6 +30,15 @@ cd svcms-synaptic
 cargo build --release
 
 # Install globally
+cargo install --path .
+```
+
+**Troubleshooting Installation**
+If you get authentication errors with Method 1:
+```bash
+# Clone manually then install
+git clone https://github.com/cocosberlucens/svcms-synaptic.git
+cd svcms-synaptic
 cargo install --path .
 ```
 
