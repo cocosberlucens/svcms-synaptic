@@ -95,7 +95,7 @@ fn is_valid_svcms_type(commit_type: &str) -> bool {
     matches!(
         commit_type,
         // Standard Conventional Commits
-        "feat" | "fix" | "docs" | "style" | "refactor" | 
+        "feat" | "fix" | "fixed" | "docs" | "style" | "refactor" | 
         "perf" | "test" | "build" | "ci" | "chore" |
         // SVCMS Knowledge Types
         "learned" | "insight" | "context" | "decision" | "decided" | "memory" |

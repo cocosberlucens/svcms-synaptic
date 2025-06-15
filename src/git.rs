@@ -138,8 +138,67 @@ mod tests {
     
     #[test]
     fn test_get_svcms_commits_empty_repo() {
-        let (dir, _repo) = create_test_repo().unwrap();
+        let (dir, repo) = create_test_repo().unwrap();
+        
+        // Create an initial commit so there's a HEAD
+        let sig = git2::Signature::now("Test User", "test@example.com").unwrap();
+        let tree_id = {
+            let mut index = repo.index().unwrap();
+            index.write_tree().unwrap()
+        };
+        let tree = repo.find_tree(tree_id).unwrap();
+        
+        repo.commit(
+            Some("HEAD"),
+            &sig,
+            &sig,
+            "Initial commit",
+            &tree,
+            &[],
+        ).unwrap();
+        
+        // Now test - should find no SVCMS commits (initial commit isn't SVCMS)
         let commits = get_svcms_commits(dir.path().to_str().unwrap(), 10).unwrap();
         assert_eq!(commits.len(), 0);
+    }
+    
+    #[test]
+    fn test_get_svcms_commits_with_svcms_commit() {
+        let (dir, repo) = create_test_repo().unwrap();
+        
+        // Create an initial commit
+        let sig = git2::Signature::now("Test User", "test@example.com").unwrap();
+        let tree_id = {
+            let mut index = repo.index().unwrap();
+            index.write_tree().unwrap()
+        };
+        let tree = repo.find_tree(tree_id).unwrap();
+        
+        let parent = repo.commit(
+            Some("HEAD"),
+            &sig,
+            &sig,
+            "Initial commit",
+            &tree,
+            &[],
+        ).unwrap();
+        
+        // Create an SVCMS commit
+        let parent_commit = repo.find_commit(parent).unwrap();
+        repo.commit(
+            Some("HEAD"),
+            &sig,
+            &sig,
+            "feat(test): add test feature\n\nThis is a test commit.\n\nMemory: Test memory content\nTags: test, feature",
+            &tree,
+            &[&parent_commit],
+        ).unwrap();
+        
+        // Should find one SVCMS commit
+        let commits = get_svcms_commits(dir.path().to_str().unwrap(), 10).unwrap();
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].commit_type, "feat");
+        assert_eq!(commits[0].scope, Some("test".to_string()));
+        assert_eq!(commits[0].memory, Some("Test memory content".to_string()));
     }
 }
