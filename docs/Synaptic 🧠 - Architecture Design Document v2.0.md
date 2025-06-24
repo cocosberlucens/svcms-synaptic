@@ -28,35 +28,35 @@ This dual approach ensures we have both historical accuracy AND practical usabil
 ### Updated System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Synaptic CLI                         │
-├─────────────────────────────────────────────────────────┤
-│                  Command Handler                        │
-│         ┌──────────┴──────────┴──────────┐            │
-│         │          │          │          │            │
-│    sync │     query│    vault│      init│            │
-│         ▼          ▼          ▼          ▼            │
-├─────────────────────────────────────────────────────────┤
-│   Memory Sync   Query Engine  Obsidian    Config      │
-│     Engine      (Dual Mode)   Manager     Manager     │
-│         │            │            │                    │
-│         ▼            ▼            ▼                    │
+┌─────────────────────────────────────────────────────┐
+│                    Synaptic CLI                     │
+├─────────────────────────────────────────────────────┤
+│                  Command Handler                    │
+│         ┌──────────┴──────────┴──────────┐          │
+│         │          │          │          │          │
+│    sync │     query│     vault│      init│          │
+│         ▼          ▼          ▼          ▼          │
+├─────────────────────────────────────────────────────┤
+│   Memory Sync   Query Engine  Obsidian    Config    │
+│     Engine      (Dual Mode)   Manager     Manage    │
+│         │            │            │                 │
+│         ▼            ▼            ▼                 │
 │  ┌─────────────┬─────────────┬─────────────┐        │
 │  │Commit Parser│ Git Search  │Vault Syncer │        │
 │  ├─────────────┼─────────────┼─────────────┤        │
 │  │   Memory    │  Dataview   │  Template   │        │
 │  │  Extractor  │   Query     │  Renderer   │        │
 │  ├─────────────┼─────────────┼─────────────┤        │
-│  │File Placer │Unified Search│ Wikilink   │        │
-│  │            │              │ Enricher    │        │
+│  │File Placer  │  Unified    │ Wikilink    │        │
+│  │             │  Search     │ Enricher    │        │
 │  └─────────────┴─────────────┴─────────────┘        │
-├─────────────────────────────────────────────────────────┤
-│     Git Repository          Obsidian Vault             │
-│   (Source of Truth)      (Living Knowledge)            │
-│   + CLAUDE.md files         + Note Files               │
-│   + Commit History          + Dataview Indices         │
-│   + Empty Commits           + Canvas Files             │
-└─────────────────────────────────────────────────────────┘
+├─────────────────────────────────────────────────────┤
+│     Git Repository          Obsidian Vault          │
+│   (Source of Truth)      (Living Knowledge)         │
+│   + CLAUDE.md files         + Note Files            │
+│   + Commit History          + Dataview Indices      │
+│   + Empty Commits           + Canvas Files          │
+└─────────────────────────────────────────────────────┘
 ```
 
 ### Component Details
