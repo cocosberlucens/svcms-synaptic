@@ -377,6 +377,101 @@ synaptic init --no-hook          # Skip hook installation
 synaptic init --backup-existing  # Backup existing hook before replacing
 ```
 
+## Memory Lifecycle Management
+
+### The Stale Knowledge Problem
+
+Git repositories are dynamic - commits get rebased, branches are deleted, and history is rewritten. However, traditional sync approaches are add-only, leading to **knowledge pollution**:
+
+```bash
+# Day 1: Bad approach committed
+git commit -m "attempted(auth): try complex OAuth flow
+Memory: OAuth with 3rd party tokens is overly complex"
+
+# Day 5: Commit gets rebased/deleted during cleanup
+git rebase -i HEAD~10  # Commit SHA abc1234 no longer exists
+
+# Day 6: Memory sync still shows phantom knowledge
+synaptic sync  # Still references abc1234 - a ghost commit!
+```
+
+**Result**: Misleading memories referencing non-existent commits create confusion and technical debt.
+
+### Solution: Intelligent Memory Cleanup
+
+Synaptic implements **memory lifecycle management** that keeps knowledge synchronized with actual Git history:
+
+#### CLI Commands
+
+```bash
+# Memory cleanup operations
+synaptic unsync                    # Remove memories for missing commits
+synaptic unsync --dry-run         # Preview what would be removed
+synaptic unsync --commit=abc1234  # Remove specific commit memory
+synaptic unsync --archive         # Move stale memories to archive section
+
+# Integrated cleanup
+synaptic sync --cleanup           # Auto-cleanup during normal sync
+synaptic sync --validate          # Sync + validate all existing memories
+
+# Memory validation
+synaptic validate                 # Check memory/commit consistency
+synaptic validate --fix           # Fix inconsistencies automatically
+synaptic validate --report        # Generate cleanup report
+```
+
+#### Implementation Strategy
+
+1. **Commit Hash Validation**: Check if each memory's SHA exists in current Git history
+2. **Graceful Degradation**: Archive vs delete options for different scenarios
+3. **Batch Processing**: Handle rebased/squashed commits intelligently
+4. **User Control**: Manual cleanup vs automatic during sync
+5. **Audit Trail**: Log what memories were removed and why
+
+#### Memory Archive Format
+
+Instead of deletion, memories can be archived:
+
+```markdown
+## SVCMS Memories
+
+*Automatically synced by Synaptic*
+
+- Current insight: decided(auth): use JWT pattern (def5678) [auth, jwt]
+- Another insight: learned(api): rate limits are strict (ghi9012) [api, limits]
+
+## Archived Memories
+
+*Memories from commits no longer in Git history*
+
+- 📦 Archived 2025-01-28: attempted(auth): try complex OAuth (abc1234) [auth, oauth]
+  *Reason: Commit not found in Git history*
+```
+
+#### Configuration Options
+
+```toml
+[cleanup]
+mode = "archive"              # "archive" | "delete" | "manual"
+auto_cleanup_on_sync = true   # Run cleanup automatically
+archive_format = "dated"      # "dated" | "separate_file"
+retention_days = 30           # Keep archived memories for N days
+
+[cleanup.validation]
+check_frequency = "weekly"    # "always" | "daily" | "weekly" | "manual"
+report_stale_memories = true  # Alert when stale memories detected
+```
+
+### Benefits
+
+1. **Knowledge Accuracy**: Memories always correspond to actual Git commits
+2. **Reduced Confusion**: No phantom insights from deleted experiments
+3. **Clean Evolution**: Knowledge base stays current with codebase reality
+4. **Audit Trail**: Track what knowledge was removed and why
+5. **Flexible Recovery**: Archived memories can be restored if needed
+
+This transforms Synaptic from a simple sync tool into a sophisticated **knowledge curator** that maintains the integrity of your project's memory system.
+
 ## Why Dual-Layer Architecture
 
 Per Corrado & Claude’s discussion (2025-01-28):
