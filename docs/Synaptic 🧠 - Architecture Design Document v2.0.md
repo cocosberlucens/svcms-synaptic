@@ -112,26 +112,48 @@ pub enum QuerySource {
 - **Dataview Query**: Leverages Obsidian’s Dataview plugin
 - **Unified Search**: Merges results from both sources
 
+#### 6. **Config Manager** (Enhanced)
+
+```rust
+pub struct ConfigManager {
+    config_path: PathBuf,
+    hook_installer: HookInstaller,
+}
+
+pub struct HookInstaller {
+    template_path: PathBuf,
+    target_permissions: u32,
+}
+```
+
+- **Hook Installation**: Automated post-commit hook setup
+- **Conflict Detection**: Checks for existing hooks, offers merge options
+- **Cross-platform Support**: Handles Windows/Unix permission differences
+- **Template Management**: Maintains hook script templates
+- **Rollback Capability**: Can uninstall/restore previous hooks
+
 ### Obsidian Vault Structure
 
 ```
 vault/
-├── projects/
-│   ├── staff-scheduling/
-│   │   ├── commits/
-│   │   │   ├── 2025-01-28-learned-scheduler-backtracking.md
-│   │   │   ├── 2025-01-28-decided-auth-jwt-pattern.md
-│   │   │   └── 2025-01-28-attempted-greedy-algorithm.md
-│   │   ├── _index.md        # Project-specific queries
-│   │   ├── _dashboard.md    # Knowledge dashboard
-│   │   └── _canvas/         # Visual architecture decisions
-│   └── [other-projects]/
-├── concepts/                # Cross-project patterns
-│   ├── Backtracking Algorithms.md
-│   ├── Repository Pattern.md
-│   └── JWT Authentication.md
-├── people/                  # User preferences (Corrado's patterns)
-└── daily/                   # Optional daily rollups
+└── synaptic/                # Synaptic container (keeps vault organized)
+    ├── projects/
+    │   ├── staff-scheduling/
+    │   │   ├── commits/
+    │   │   │   ├── 2025-01-28-learned-scheduler-backtracking.md
+    │   │   │   ├── 2025-01-28-decided-auth-jwt-pattern.md
+    │   │   │   └── 2025-01-28-attempted-greedy-algorithm.md
+    │   │   ├── _index.md        # Project-specific queries
+    │   │   ├── _dashboard.md    # Knowledge dashboard
+    │   │   └── _canvas/         # Visual architecture decisions
+    │   └── [other-projects]/
+    ├── concepts/                # Cross-project patterns
+    │   ├── Backtracking Algorithms.md
+    │   ├── Repository Pattern.md
+    │   └── JWT Authentication.md
+    ├── people/                  # User preferences (Corrado's patterns)
+    ├── daily/                   # Optional daily rollups
+    └── _synaptic_index.md       # Main dashboard for all Synaptic content
 ```
 
 ### Data Flow
@@ -266,7 +288,8 @@ dry_run = false
 
 [obsidian]
 vault_path = "~/Documents/ObsidianVault"
-project_subfolder = "projects"
+synaptic_folder = "synaptic"        # Container folder within vault
+project_subfolder = "projects"      # Relative to synaptic_folder
 enable_wikilinks = true
 enable_canvas = true
 template_path = "~/.synaptic/templates/commit.hbs"
@@ -307,24 +330,51 @@ synaptic vault stats --project="sched"
 synaptic vault graph --scope="auth"
 synaptic vault canvas --type="architecture"
 
+# Project initialization (Enhanced)
+synaptic init                     # Complete setup: config + post-commit hook
+synaptic init --hook-only         # Install hook in existing setup
+synaptic init --no-hook           # Skip hook installation
+synaptic init --vault-path=PATH   # Specify Obsidian vault location
+
 # Utility commands
 synaptic stats                    # Show statistics from both sources
 synaptic clean                    # Clean duplicate memories
-synaptic init                     # Initialize in project
 ```
 
 ## Post-Commit Hook
+
+### Automated Installation
+
+When running `synaptic init`, the tool automatically:
+
+1. **Detects existing hooks**: Checks if `.git/hooks/post-commit` exists
+2. **Handles conflicts**: Offers to merge with existing hooks or backup/replace
+3. **Sets permissions**: Ensures the hook is executable (`chmod +x`)
+4. **Validates setup**: Tests that Synaptic is in PATH and accessible
+
+### Hook Template
 
 `.git/hooks/post-commit`:
 
 ```bash
 #!/bin/sh
 # Automatically sync SVCMS commits to Obsidian
+# Installed by Synaptic v0.1.0
 
 # Only process if it's a SVCMS commit
 if git log -1 --pretty=%s | grep -qE '^(feat|fix|learned|insight|decision|memory|discussed|explored|attempted|workflow|preference|pattern)(\(.+\))?:'; then
+    # Sync silently to avoid interrupting commit workflow
     synaptic sync --last=1 --quiet
 fi
+```
+
+### Installation Options
+
+```bash
+synaptic init                    # Install hook + create config
+synaptic init --hook-only        # Just install/update the hook
+synaptic init --no-hook          # Skip hook installation
+synaptic init --backup-existing  # Backup existing hook before replacing
 ```
 
 ## Why Dual-Layer Architecture
