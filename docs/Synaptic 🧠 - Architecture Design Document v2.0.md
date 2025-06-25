@@ -306,6 +306,20 @@ show_context = true
 # Custom location mappings (for CLAUDE.md files)
 auth = "src/authentication/CLAUDE.md"
 db = "database/CLAUDE.md"
+
+[commit_types]
+# Extend SVCMS spec with project-specific types
+additional = ["fixed", "decided", "migrated", "deployed", "configured"]
+
+# Or completely override standard types (includes SVCMS + custom)
+# override = ["feat", "fix", "fixed", "docs", ...]
+
+# Type aliases for normalization (map variations to canonical types)
+[commit_types.aliases]
+fixed = "fix"
+decided = "decision"
+bugfix = "fix"
+feature = "feat"
 ```
 
 ## CLI Interface (Enhanced)
@@ -471,6 +485,97 @@ report_stale_memories = true  # Alert when stale memories detected
 5. **Flexible Recovery**: Archived memories can be restored if needed
 
 This transforms Synaptic from a simple sync tool into a sophisticated **knowledge curator** that maintains the integrity of your project's memory system.
+
+## Flexible Commit Type System
+
+### The Challenge
+
+Different projects and teams naturally develop their own commit type conventions:
+
+- **Natural Language Variations**: `fixed` vs `fix`, `decided` vs `decision`
+- **Domain-Specific Types**: `migrated` for database changes, `deployed` for releases
+- **Team Preferences**: Some prefer `bugfix` over `fix`, `feature` over `feat`
+- **Project Evolution**: New types emerge as projects mature
+
+### Solution: Configurable Commit Types
+
+Synaptic extends the SVCMS specification with flexible commit type configuration:
+
+#### Configuration Options
+
+```toml
+[commit_types]
+# Method 1: Extend SVCMS with additional types
+additional = ["fixed", "decided", "migrated", "deployed", "configured"]
+
+# Method 2: Complete override (replaces default validation)
+override = [
+    # Standard Conventional Commits
+    "feat", "feature", "fix", "fixed", "bugfix",
+    "docs", "style", "refactor", "perf", "test",
+    # SVCMS Knowledge Types
+    "learned", "insight", "context", "decision", "decided",
+    # Project-specific
+    "migrated", "deployed", "configured", "integrated"
+]
+
+# Type normalization via aliases
+[commit_types.aliases]
+fixed = "fix"           # "fixed" commits treated as "fix"
+decided = "decision"    # "decided" commits treated as "decision"
+bugfix = "fix"         # Team prefers "bugfix" but normalize to "fix"
+feature = "feat"       # Long form normalized to standard
+```
+
+#### Implementation Architecture
+
+```rust
+pub struct CommitTypeValidator {
+    base_types: HashSet<String>,      // SVCMS spec types
+    additional_types: HashSet<String>, // From config
+    override_types: Option<HashSet<String>>, // Complete replacement
+    aliases: HashMap<String, String>,  // Type normalization
+}
+
+impl CommitTypeValidator {
+    pub fn is_valid(&self, commit_type: &str) -> bool {
+        // Check aliases first
+        let normalized = self.aliases.get(commit_type)
+            .map(|s| s.as_str())
+            .unwrap_or(commit_type);
+        
+        // Use override if specified, otherwise base + additional
+        if let Some(ref overrides) = self.override_types {
+            overrides.contains(normalized)
+        } else {
+            self.base_types.contains(normalized) || 
+            self.additional_types.contains(normalized)
+        }
+    }
+}
+```
+
+#### CLI Integration
+
+```bash
+# Discover commit types in use
+synaptic stats --show-types       # List all commit types found
+synaptic stats --unrecognized     # Show commits with unknown types
+
+# Validate configuration
+synaptic config validate          # Check config syntax
+synaptic config suggest-types     # Suggest types based on git history
+```
+
+### Benefits
+
+1. **Project Autonomy**: Teams define what's meaningful for their context
+2. **Backward Compatibility**: Existing commits remain valid
+3. **Type Consistency**: Aliases ensure normalized knowledge extraction
+4. **Progressive Enhancement**: Start with SVCMS, extend as needed
+5. **Discovery Tools**: Find and validate project-specific patterns
+
+This flexible type system ensures Synaptic adapts to real-world usage patterns while maintaining the semantic richness that makes SVCMS valuable.
 
 ## Why Dual-Layer Architecture
 
