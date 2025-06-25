@@ -275,38 +275,101 @@ fn update_claude_md(path: &Path, memories: &[Memory], dry_run: bool) -> Result<(
     Ok(())
 }
 
-/// Sync memories from commits to CLAUDE.md files
+/// Sync memories from commits to CLAUDE.md files and optionally Obsidian
 pub fn sync_memories(commits: Vec<SvcmsCommit>, project_root: &str, dry_run: bool) -> Result<()> {
+    sync_memories_with_options(commits, project_root, dry_run, None)
+}
+
+/// Sync memories with Obsidian integration
+pub fn sync_memories_with_obsidian(
+    commits: Vec<SvcmsCommit>, 
+    project_root: &str, 
+    dry_run: bool,
+    obsidian_manager: &crate::obsidian::ObsidianManager
+) -> Result<()> {
+    sync_memories_with_options(commits, project_root, dry_run, Some(obsidian_manager))
+}
+
+/// Internal sync function with optional Obsidian integration
+fn sync_memories_with_options(
+    commits: Vec<SvcmsCommit>, 
+    project_root: &str, 
+    dry_run: bool,
+    obsidian_manager: Option<&crate::obsidian::ObsidianManager>
+) -> Result<()> {
     let memories_by_file = group_memories_by_file(&commits, project_root);
     
-    if memories_by_file.is_empty() {
+    if memories_by_file.is_empty() && commits.is_empty() {
         println!("{}", "No memories found to sync.".yellow());
         return Ok(());
     }
     
-    println!("\n{} Syncing memories to {} files...", 
-        "🧠".bright_blue(),
-        memories_by_file.len()
-    );
-    
+    // Sync to CLAUDE.md files
     let mut total_memories = 0;
-    for (path, memories) in &memories_by_file {
-        update_claude_md(path, memories, dry_run)?;
-        total_memories += memories.len();
+    if !memories_by_file.is_empty() {
+        println!("\n{} Syncing memories to {} CLAUDE.md files...", 
+            "🧠".bright_blue(),
+            memories_by_file.len()
+        );
+        
+        for (path, memories) in &memories_by_file {
+            update_claude_md(path, memories, dry_run)?;
+            total_memories += memories.len();
+        }
     }
     
+    // Sync to Obsidian if configured
+    let mut obsidian_synced = 0;
+    if let Some(obsidian) = obsidian_manager {
+        if !dry_run {
+            println!("\n{} Syncing to Obsidian vault...", "🔮".bright_magenta());
+            
+            // Extract project name from git repository
+            let project_name = std::path::Path::new(project_root)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("unknown-project");
+            
+            obsidian_synced = obsidian.sync_commits(&commits, project_name)?;
+        } else {
+            // Count commits with memories for dry run
+            obsidian_synced = commits.iter().filter(|c| c.memory.is_some()).count();
+            println!("\n{} Would sync {} commits to Obsidian vault", 
+                "🔮".bright_black(),
+                obsidian_synced
+            );
+        }
+    }
+    
+    // Final summary
     if !dry_run {
-        println!("\n{} Synced {} memories to {} files", 
-            "✨".bright_green(),
-            total_memories,
-            memories_by_file.len()
-        );
+        if obsidian_synced > 0 {
+            println!("\n{} Synced {} memories to CLAUDE.md + {} notes to Obsidian", 
+                "✨".bright_green(),
+                total_memories,
+                obsidian_synced
+            );
+        } else {
+            println!("\n{} Synced {} memories to {} files", 
+                "✨".bright_green(),
+                total_memories,
+                memories_by_file.len()
+            );
+        }
     } else {
-        println!("\n{} Would sync {} memories to {} files", 
-            "📋".bright_yellow(),
-            total_memories,
-            memories_by_file.len()
-        );
+        if obsidian_synced > 0 {
+            println!("\n{} Would sync {} memories to CLAUDE.md + {} notes to Obsidian", 
+                "📋".bright_yellow(),
+                total_memories,
+                obsidian_synced
+            );
+        } else {
+            println!("\n{} Would sync {} memories to {} files", 
+                "📋".bright_yellow(),
+                total_memories,
+                memories_by_file.len()
+            );
+        }
     }
     
     Ok(())

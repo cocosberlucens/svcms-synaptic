@@ -12,6 +12,7 @@ readme = "README.md"
 git2 = "0.18"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.8"
 regex = "1.10"
 lazy_static = "1.4"
@@ -19,7 +20,6 @@ anyhow = "1.0"
 chrono = "0.4"
 colored = "2.1"
 handlebars = "4.4"
-tantivy = "0.20"  # For unified search
 
 [dev-dependencies]
 tempfile = "3.10"

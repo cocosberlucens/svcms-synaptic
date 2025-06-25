@@ -32,6 +32,16 @@ enum Commands {
     
     /// Initialize Synaptic in the current project
     Init,
+    
+    /// Vault operations
+    #[command(subcommand)]
+    Vault(VaultCommands),
+}
+
+#[derive(Subcommand)]
+enum VaultCommands {
+    /// Initialize Obsidian vault structure
+    Init,
 }
 
 fn main() -> Result<()> {
@@ -94,6 +104,26 @@ fn main() -> Result<()> {
             }
             
             Ok(())
+        }
+        Commands::Vault(vault_cmd) => {
+            match vault_cmd {
+                VaultCommands::Init => {
+                    println!("🔮 Initializing Obsidian vault structure...");
+                    
+                    // For now, just show instructions since we need config
+                    println!("\nTo use Obsidian integration:");
+                    println!("1. Configure vault path in ~/.synaptic/config.toml");
+                    println!("2. Add: [obsidian]");
+                    println!("3. Add: vault_path = \"/path/to/your/vault\"");
+                    println!("4. Add: synaptic_folder = \"synaptic\"");
+                    println!("5. Run 'synaptic vault init' again");
+                    
+                    // TODO: Implement config reading and vault initialization
+                    println!("\n⚠️  Config-based vault initialization coming in next iteration!");
+                    
+                    Ok(())
+                }
+            }
         }
     }
 }

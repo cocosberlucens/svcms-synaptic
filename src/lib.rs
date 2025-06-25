@@ -1,10 +1,12 @@
 pub mod parser;
 pub mod memory;
 pub mod git;
+pub mod obsidian;
 
 // Re-export for easier access
 pub use git::*;
 pub use memory::*;
+pub use obsidian::*;
 
 #[derive(Debug, Clone)]
 pub struct SvcmsCommit {
