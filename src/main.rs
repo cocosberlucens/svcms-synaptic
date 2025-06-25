@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use synaptic::{git, memory};
+use synaptic::{git, memory, config::SynapticConfig, obsidian::ObsidianManager};
 
 #[derive(Parser)]
 #[command(name = "synaptic")]
@@ -70,8 +70,44 @@ fn main() -> Result<()> {
                 println!("(dry run - no files will be modified)");
             }
             
-            // Sync memories to CLAUDE.md files
-            memory::sync_memories(commits, &repo_path, dry_run)?;
+            // Try to load config for Obsidian integration
+            let config = SynapticConfig::load().ok();
+            
+            if let Some(config) = &config {
+                if let Some(obsidian_config) = config.obsidian() {
+                    // Expand tilde in vault path
+                    let vault_path = if obsidian_config.vault_path.starts_with("~/") {
+                        if let Some(home) = dirs::home_dir() {
+                            home.join(&obsidian_config.vault_path[2..])
+                        } else {
+                            std::path::PathBuf::from(&obsidian_config.vault_path)
+                        }
+                    } else {
+                        std::path::PathBuf::from(&obsidian_config.vault_path)
+                    };
+                    
+                    let synaptic_folder = config.synaptic_folder();
+                    
+                    // Try Obsidian integration
+                    match ObsidianManager::new(vault_path, synaptic_folder) {
+                        Ok(obsidian_manager) => {
+                            // Sync with Obsidian integration
+                            memory::sync_memories_with_obsidian(commits, &repo_path, dry_run, &obsidian_manager)?;
+                        }
+                        Err(e) => {
+                            println!("⚠️  Obsidian integration unavailable: {}", e);
+                            println!("🔄 Falling back to CLAUDE.md-only sync...");
+                            memory::sync_memories(commits, &repo_path, dry_run)?;
+                        }
+                    }
+                } else {
+                    // No Obsidian config, use regular sync
+                    memory::sync_memories(commits, &repo_path, dry_run)?;
+                }
+            } else {
+                // No config file, use regular sync
+                memory::sync_memories(commits, &repo_path, dry_run)?;
+            }
             
             Ok(())
         }
@@ -110,16 +146,76 @@ fn main() -> Result<()> {
                 VaultCommands::Init => {
                     println!("🔮 Initializing Obsidian vault structure...");
                     
-                    // For now, just show instructions since we need config
-                    println!("\nTo use Obsidian integration:");
-                    println!("1. Configure vault path in ~/.synaptic/config.toml");
-                    println!("2. Add: [obsidian]");
-                    println!("3. Add: vault_path = \"/path/to/your/vault\"");
-                    println!("4. Add: synaptic_folder = \"synaptic\"");
-                    println!("5. Run 'synaptic vault init' again");
+                    // Check if config file exists
+                    let config_path = SynapticConfig::default_config_path()?;
+                    let config_exists = config_path.exists();
                     
-                    // TODO: Implement config reading and vault initialization
-                    println!("\n⚠️  Config-based vault initialization coming in next iteration!");
+                    // Load config
+                    let config = SynapticConfig::load()?;
+                    
+                    // Check if Obsidian is configured
+                    if !config_exists || config.obsidian().is_none() {
+                        if !config_exists {
+                            println!("\n⚠️  No config file found. Creating sample config...");
+                        } else {
+                            println!("\n⚠️  No [obsidian] section found in config.");
+                        }
+                        
+                        match SynapticConfig::create_sample_config() {
+                            Ok(_) => {
+                                println!("\n✅ Sample config created at ~/.synaptic/config.toml");
+                                println!("\nNext steps:");
+                                println!("1. Edit ~/.synaptic/config.toml");
+                                println!("2. Set the correct vault_path in [obsidian] section");
+                                println!("3. Run 'synaptic vault init' again");
+                                return Ok(());
+                            }
+                            Err(e) => {
+                                println!("\n❌ Failed to create config: {}", e);
+                                println!("\nPlease manually add to ~/.synaptic/config.toml:");
+                                println!("[obsidian]");
+                                println!("vault_path = \"/path/to/your/obsidian/vault\"");
+                                println!("synaptic_folder = \"synaptic\"");
+                                return Ok(());
+                            }
+                        }
+                    }
+                    
+                    if let Some(obsidian_config) = config.obsidian() {
+                        // Expand tilde in vault path
+                        let vault_path = if obsidian_config.vault_path.starts_with("~/") {
+                            if let Some(home) = dirs::home_dir() {
+                                home.join(&obsidian_config.vault_path[2..])
+                            } else {
+                                std::path::PathBuf::from(&obsidian_config.vault_path)
+                            }
+                        } else {
+                            std::path::PathBuf::from(&obsidian_config.vault_path)
+                        };
+                        
+                        let synaptic_folder = config.synaptic_folder();
+                        
+                        match ObsidianManager::new(vault_path.clone(), synaptic_folder) {
+                            Ok(manager) => {
+                                match manager.init_vault_structure() {
+                                    Ok(_) => {
+                                        println!("\n✅ Vault structure initialized successfully!");
+                                        println!("📁 Location: {}", vault_path.display());
+                                        println!("📂 Synaptic folder: {}", manager.synaptic_path().display());
+                                        println!("\nYou can now use 'synaptic sync' to sync commits to both CLAUDE.md and Obsidian!");
+                                    }
+                                    Err(e) => {
+                                        println!("\n❌ Failed to initialize vault structure: {}", e);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                println!("\n❌ Failed to access vault: {}", e);
+                                println!("\n💡 Make sure the vault_path in your config is correct:");
+                                println!("   Current path: {}", vault_path.display());
+                            }
+                        }
+                    }
                     
                     Ok(())
                 }

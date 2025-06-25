@@ -2,6 +2,7 @@ pub mod parser;
 pub mod memory;
 pub mod git;
 pub mod obsidian;
+pub mod config;
 
 // Re-export for easier access
 pub use git::*;

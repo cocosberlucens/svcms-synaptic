@@ -235,7 +235,7 @@ aliases: ["{{commit_summary}}"]
 - [x] Scope-based inference
 - [x] Deduplication logic
 
-### Phase 2: Obsidian Integration ✅ (Core Complete - Week 3-4)
+### Phase 2: Obsidian Integration ✅ (Complete - Week 3-4)
 
 - [x] Obsidian vault structure design
 - [x] ObsidianManager struct implementation
@@ -243,8 +243,10 @@ aliases: ["{{commit_summary}}"]
 - [x] Wikilink enrichment logic (concept extraction)
 - [x] Vault init command (synaptic vault init)
 - [x] Dual sync flow (CLAUDE.md + Obsidian notes)
-- [ ] Post-commit hook implementation (Next iteration)
-- [ ] Config file reading for vault settings (Next iteration)
+- [x] Config file reading for vault settings
+- [x] Automatic config creation with sample settings
+- [x] Config-aware sync command with Obsidian integration
+- [ ] Post-commit hook implementation (Phase 2.5)
 
 ### Phase 3: Dual Query Engine (Week 5-6)
 
