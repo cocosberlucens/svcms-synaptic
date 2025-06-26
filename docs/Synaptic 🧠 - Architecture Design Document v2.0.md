@@ -313,11 +313,8 @@ auth = "src/authentication/CLAUDE.md"
 db = "database/CLAUDE.md"
 
 [commit_types]
-# Extend SVCMS spec with project-specific types
-additional = ["fixed", "decided", "migrated", "deployed", "configured"]
-
-# Or completely override standard types (includes SVCMS + custom)
-# override = ["feat", "fix", "fixed", "docs", ...]
+# Legacy support for simple additional types
+additional = ["fixed", "decided"]
 
 # Type aliases for normalization (map variations to canonical types)
 [commit_types.aliases]
@@ -325,6 +322,48 @@ fixed = "fix"
 decided = "decision"
 bugfix = "fix"
 feature = "feat"
+
+# Two-tier system with categories and scope permissions
+[commit_types.categories.standard]
+description = "Standard Conventional Commits v1.0.0"
+types = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"]
+
+[commit_types.categories.knowledge]
+description = "SVCMS Knowledge Types - discovered insights and learnings"
+types = ["learned", "insight", "context", "decision", "memory"]
+
+[commit_types.categories.collaboration]
+description = "SVCMS Collaboration Types - team interactions and explorations"
+types = ["discussed", "explored", "attempted"]
+
+[commit_types.categories.meta]
+description = "SVCMS Meta Types - process and methodology"
+types = ["workflow", "preference", "pattern"]
+
+# Scope definitions with category permissions (matricial intersections)
+[commit_types.scopes.modules]
+# Module/component specific (typically under src/)
+auth = { categories = ["standard", "knowledge", "collaboration"], custom_types = ["integrated"] }
+api = { categories = ["standard", "knowledge"], custom_types = ["migrated"] }
+scheduler = { categories = ["all"], custom_types = [] }
+database = { categories = ["standard", "knowledge"], custom_types = ["seeded"] }
+
+[commit_types.scopes.cross_cutting]
+# Cross-cutting concerns
+architecture = { categories = ["knowledge", "collaboration", "meta"], custom_types = [] }
+security = { categories = ["knowledge", "collaboration"], custom_types = ["audited"] }
+performance = { categories = ["standard", "knowledge"], custom_types = ["profiled"] }
+
+[commit_types.scopes.tooling]
+# Development tools and infrastructure
+eslint = { categories = ["standard", "meta"], custom_types = ["configured"] }
+webpack = { categories = ["standard", "knowledge"], custom_types = ["optimized"] }
+docker = { categories = ["standard", "knowledge"], custom_types = ["containerized"] }
+
+[commit_types.scopes.project_wide]
+# Project-level scopes
+project = { categories = ["all"], custom_types = [] }
+global = { categories = ["all"], custom_types = [] }
 ```
 
 ## CLI Interface (Enhanced)
@@ -491,45 +530,65 @@ report_stale_memories = true  # Alert when stale memories detected
 
 This transforms Synaptic from a simple sync tool into a sophisticated **knowledge curator** that maintains the integrity of your project's memory system.
 
-## Flexible Commit Type System
+## Two-Tier Commit Type System
 
-### The Challenge
+### Revolutionary Architecture
 
-Different projects and teams naturally develop their own commit type conventions:
+SVCMS now supports a sophisticated two-tier commit type system that creates natural language-like commit messages:
 
-- **Natural Language Variations**: `fixed` vs `fix`, `decided` vs `decision`
-- **Domain-Specific Types**: `migrated` for database changes, `deployed` for releases
-- **Team Preferences**: Some prefer `bugfix` over `fix`, `feature` over `feat`
-- **Project Evolution**: New types emerge as projects mature
+**Syntax**: `category.type(scope): summary`
 
-### Solution: Configurable Commit Types
+**Examples**:
+- `knowledge.learned(auth): JWT tokens expire after 24 hours`
+- `standard.feat(api): add user authentication endpoint`
+- `collaboration.discussed(architecture): decided on microservices approach`
+- `meta.workflow(testing): established TDD cycle for new features`
+- `auth.integrated(oauth): connected third-party OAuth provider`
 
-Synaptic extends the SVCMS specification with flexible commit type configuration:
+### Matricial Permission System
 
-#### Configuration Options
+The system uses sophisticated matricial intersections where **scopes** define which **categories** are allowed, creating natural constraints:
+
+- **Module scopes** (auth, api, database) → Typically allow standard + knowledge + collaboration
+- **Cross-cutting scopes** (architecture, security) → Focus on knowledge + collaboration + meta
+- **Tooling scopes** (eslint, webpack, docker) → Primarily standard + knowledge + meta
+- **Project scopes** (project, global) → Allow all categories with "all" wildcard
+
+### Enhanced Configuration
+
+#### Real-World Examples
+
+```bash
+# Module-specific knowledge discovery
+knowledge.learned(auth): JWT tokens expire after 24 hours
+knowledge.insight(api): rate limiting could be optimized with Redis
+
+# Cross-cutting architectural decisions  
+collaboration.discussed(architecture): decided on microservices approach
+knowledge.decision(security): use OAuth2 with PKCE for mobile apps
+
+# Development workflow establishment
+meta.workflow(testing): established TDD cycle for new features
+meta.pattern(database): repository pattern works well for our use case
+
+# Custom domain-specific types
+auth.integrated(oauth): connected Google OAuth provider
+database.seeded(test): populated test database with sample data
+security.audited(api): completed security review of user endpoints
+```
+
+#### Configuration Structure
+
+The sophisticated config enables these natural language commits through matricial permissions:
 
 ```toml
-[commit_types]
-# Method 1: Extend SVCMS with additional types
-additional = ["fixed", "decided", "migrated", "deployed", "configured"]
+# See complete configuration example above in "Configuration" section
+[commit_types.categories.knowledge]
+types = ["learned", "insight", "context", "decision", "memory"]
 
-# Method 2: Complete override (replaces default validation)
-override = [
-    # Standard Conventional Commits
-    "feat", "feature", "fix", "fixed", "bugfix",
-    "docs", "style", "refactor", "perf", "test",
-    # SVCMS Knowledge Types
-    "learned", "insight", "context", "decision", "decided",
-    # Project-specific
-    "migrated", "deployed", "configured", "integrated"
-]
-
-# Type normalization via aliases
-[commit_types.aliases]
-fixed = "fix"           # "fixed" commits treated as "fix"
-decided = "decision"    # "decided" commits treated as "decision"
-bugfix = "fix"         # Team prefers "bugfix" but normalize to "fix"
-feature = "feat"       # Long form normalized to standard
+[commit_types.scopes.modules.auth]
+categories = ["standard", "knowledge", "collaboration"]  
+custom_types = ["integrated"]  # Enables auth.integrated(oauth)
 ```
 
 #### Implementation Architecture
