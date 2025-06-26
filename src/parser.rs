@@ -3,6 +3,7 @@
 use regex::Regex;
 use anyhow::Result;
 use crate::SvcmsCommit;
+use crate::commit_types::CommitTypeValidator;
 
 lazy_static::lazy_static! {
     // Header pattern: <type>(<scope>): <summary>
@@ -38,6 +39,16 @@ pub fn parse_commit_message(
     message: &str, 
     timestamp: chrono::DateTime<chrono::Utc>
 ) -> Result<Option<SvcmsCommit>> {
+    parse_commit_message_with_validator(sha, message, timestamp, None)
+}
+
+/// Parse a commit message with custom validator
+pub fn parse_commit_message_with_validator(
+    sha: &str, 
+    message: &str, 
+    timestamp: chrono::DateTime<chrono::Utc>,
+    validator: Option<&CommitTypeValidator>
+) -> Result<Option<SvcmsCommit>> {
     let lines: Vec<&str> = message.lines().collect();
     if lines.is_empty() {
         return Ok(None);
@@ -54,12 +65,18 @@ pub fn parse_commit_message(
         .map(|m| m.as_str().to_string())
         .unwrap_or_default();
     
+    let scope = captures.get(2).map(|m| m.as_str().to_string());
+    
     // Check if this is an SVCMS-extended type
-    if !is_valid_svcms_type(&commit_type) {
+    let is_valid = if let Some(validator) = validator {
+        validator.is_valid(&commit_type, scope.as_deref())
+    } else {
+        is_valid_svcms_type(&commit_type)
+    };
+    
+    if !is_valid {
         return Ok(None);
     }
-    
-    let scope = captures.get(2).map(|m| m.as_str().to_string());
     let summary = captures.get(3)
         .map(|m| m.as_str().to_string())
         .unwrap_or_default();

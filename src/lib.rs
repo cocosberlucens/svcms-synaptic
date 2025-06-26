@@ -3,6 +3,7 @@ pub mod memory;
 pub mod git;
 pub mod obsidian;
 pub mod config;
+pub mod commit_types;
 
 // Re-export for easier access
 pub use git::*;

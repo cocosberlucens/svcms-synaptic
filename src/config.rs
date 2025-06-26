@@ -42,10 +42,35 @@ pub struct DataviewConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct CommitTypesConfig {
+    // Legacy support for simple additional types
     pub additional: Option<Vec<String>>,
     #[serde(rename = "override")]
     pub override_types: Option<Vec<String>>,
     pub aliases: Option<std::collections::HashMap<String, String>>,
+    
+    // New two-tier system
+    pub categories: Option<std::collections::HashMap<String, CommitTypeCategory>>,
+    pub scopes: Option<CommitTypeScopesConfig>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CommitTypeCategory {
+    pub description: String,
+    pub types: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CommitTypeScopesConfig {
+    pub modules: Option<std::collections::HashMap<String, ScopeConfig>>,
+    pub cross_cutting: Option<std::collections::HashMap<String, ScopeConfig>>,
+    pub tooling: Option<std::collections::HashMap<String, ScopeConfig>>,
+    pub project_wide: Option<std::collections::HashMap<String, ScopeConfig>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ScopeConfig {
+    pub categories: Vec<String>, // "all" is special value meaning all categories
+    pub custom_types: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -192,6 +217,7 @@ impl SynapticConfig {
                 }),
             }),
             commit_types: Some(CommitTypesConfig {
+                // Legacy support
                 additional: Some(vec!["fixed".to_string(), "decided".to_string()]),
                 override_types: None,
                 aliases: Some({
@@ -199,6 +225,97 @@ impl SynapticConfig {
                     aliases.insert("fixed".to_string(), "fix".to_string());
                     aliases.insert("decided".to_string(), "decision".to_string());
                     aliases
+                }),
+                // Two-tier system
+                categories: Some({
+                    let mut categories = std::collections::HashMap::new();
+                    categories.insert("standard".to_string(), CommitTypeCategory {
+                        description: "Standard Conventional Commits v1.0.0".to_string(),
+                        types: vec!["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"]
+                            .into_iter().map(|s| s.to_string()).collect(),
+                    });
+                    categories.insert("knowledge".to_string(), CommitTypeCategory {
+                        description: "SVCMS Knowledge Types - discovered insights and learnings".to_string(),
+                        types: vec!["learned", "insight", "context", "decision", "memory"]
+                            .into_iter().map(|s| s.to_string()).collect(),
+                    });
+                    categories.insert("collaboration".to_string(), CommitTypeCategory {
+                        description: "SVCMS Collaboration Types - team interactions and explorations".to_string(),
+                        types: vec!["discussed", "explored", "attempted"]
+                            .into_iter().map(|s| s.to_string()).collect(),
+                    });
+                    categories.insert("meta".to_string(), CommitTypeCategory {
+                        description: "SVCMS Meta Types - process and methodology".to_string(),
+                        types: vec!["workflow", "preference", "pattern"]
+                            .into_iter().map(|s| s.to_string()).collect(),
+                    });
+                    categories
+                }),
+                scopes: Some(CommitTypeScopesConfig {
+                    modules: Some({
+                        let mut modules = std::collections::HashMap::new();
+                        modules.insert("auth".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge", "collaboration"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["integrated".to_string()],
+                        });
+                        modules.insert("api".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["migrated".to_string()],
+                        });
+                        modules.insert("scheduler".to_string(), ScopeConfig {
+                            categories: vec!["all".to_string()],
+                            custom_types: vec![],
+                        });
+                        modules.insert("database".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["seeded".to_string()],
+                        });
+                        modules
+                    }),
+                    cross_cutting: Some({
+                        let mut cross_cutting = std::collections::HashMap::new();
+                        cross_cutting.insert("architecture".to_string(), ScopeConfig {
+                            categories: vec!["knowledge", "collaboration", "meta"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec![],
+                        });
+                        cross_cutting.insert("security".to_string(), ScopeConfig {
+                            categories: vec!["knowledge", "collaboration"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["audited".to_string()],
+                        });
+                        cross_cutting.insert("performance".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["profiled".to_string()],
+                        });
+                        cross_cutting
+                    }),
+                    tooling: Some({
+                        let mut tooling = std::collections::HashMap::new();
+                        tooling.insert("eslint".to_string(), ScopeConfig {
+                            categories: vec!["standard", "meta"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["configured".to_string()],
+                        });
+                        tooling.insert("webpack".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["optimized".to_string()],
+                        });
+                        tooling.insert("docker".to_string(), ScopeConfig {
+                            categories: vec!["standard", "knowledge"].into_iter().map(|s| s.to_string()).collect(),
+                            custom_types: vec!["containerized".to_string()],
+                        });
+                        tooling
+                    }),
+                    project_wide: Some({
+                        let mut project_wide = std::collections::HashMap::new();
+                        project_wide.insert("project".to_string(), ScopeConfig {
+                            categories: vec!["all".to_string()],
+                            custom_types: vec![],
+                        });
+                        project_wide.insert("global".to_string(), ScopeConfig {
+                            categories: vec!["all".to_string()],
+                            custom_types: vec![],
+                        });
+                        project_wide
+                    }),
                 }),
             }),
             cleanup: Some(CleanupConfig {
