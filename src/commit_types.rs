@@ -1,7 +1,7 @@
 //! Two-tier commit type validation system
 
 use std::collections::{HashMap, HashSet};
-use crate::config::{CommitTypesConfig, CommitTypeCategory, ScopeConfig};
+use crate::config::{CommitTypesConfig, ScopeConfig};
 
 /// Comprehensive commit type validator supporting two-tier system
 pub struct CommitTypeValidator {

@@ -285,9 +285,10 @@ pub fn sync_memories_with_obsidian(
     commits: Vec<SvcmsCommit>, 
     project_root: &str, 
     dry_run: bool,
-    obsidian_manager: &crate::obsidian::ObsidianManager
+    obsidian_manager: &crate::obsidian::ObsidianManager,
+    project_name: &str
 ) -> Result<()> {
-    sync_memories_with_options(commits, project_root, dry_run, Some(obsidian_manager))
+    sync_memories_with_options(commits, project_root, dry_run, Some((obsidian_manager, project_name)))
 }
 
 /// Internal sync function with optional Obsidian integration
@@ -295,7 +296,7 @@ fn sync_memories_with_options(
     commits: Vec<SvcmsCommit>, 
     project_root: &str, 
     dry_run: bool,
-    obsidian_manager: Option<&crate::obsidian::ObsidianManager>
+    obsidian_manager: Option<(&crate::obsidian::ObsidianManager, &str)>
 ) -> Result<()> {
     let memories_by_file = group_memories_by_file(&commits, project_root);
     
@@ -320,15 +321,9 @@ fn sync_memories_with_options(
     
     // Sync to Obsidian if configured
     let mut obsidian_synced = 0;
-    if let Some(obsidian) = obsidian_manager {
+    if let Some((obsidian, project_name)) = obsidian_manager {
         if !dry_run {
             println!("\n{} Syncing to Obsidian vault...", "🔮".bright_magenta());
-            
-            // Extract project name from git repository
-            let project_name = std::path::Path::new(project_root)
-                .file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or("unknown-project");
             
             obsidian_synced = obsidian.sync_commits(&commits, project_name)?;
         } else {

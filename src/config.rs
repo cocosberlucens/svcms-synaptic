@@ -25,9 +25,10 @@ pub struct SyncConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ObsidianConfig {
-    pub vault_path: String,
+    pub vault_path: Option<String>, // Now optional for project configs
     pub synaptic_folder: Option<String>,
     pub project_subfolder: Option<String>,
+    pub project_name: Option<String>, // New: project-specific name
     pub enable_wikilinks: Option<bool>,
     pub enable_canvas: Option<bool>,
     pub template_path: Option<String>,
@@ -95,8 +96,22 @@ pub struct QueryConfig {
 }
 
 impl SynapticConfig {
-    /// Load configuration from the default location
+    /// Load configuration with layering: global + project-specific
     pub fn load() -> Result<Self> {
+        // Load global config first
+        let global_path = Self::default_config_path()?;
+        let mut config = Self::load_from(&global_path)?;
+        
+        // Try to load project config and merge
+        if let Ok(project_config) = Self::load_project_config() {
+            config.merge(project_config);
+        }
+        
+        Ok(config)
+    }
+    
+    /// Load configuration from the default global location (legacy behavior)
+    pub fn load_global() -> Result<Self> {
         let config_path = Self::default_config_path()?;
         Self::load_from(&config_path)
     }
@@ -116,12 +131,126 @@ impl SynapticConfig {
         Ok(config)
     }
 
-    /// Get the default config file path
+    /// Get the default global config file path
     pub fn default_config_path() -> Result<PathBuf> {
         let home_dir = dirs::home_dir()
             .ok_or_else(|| anyhow!("Unable to determine home directory"))?;
         
         Ok(home_dir.join(".synaptic").join("config.toml"))
+    }
+    
+    /// Get the project config file path
+    pub fn project_config_path() -> Result<PathBuf> {
+        // Find git root
+        let git_root = Self::find_git_root()?;
+        Ok(git_root.join(".synaptic").join("config.toml"))
+    }
+    
+    /// Load project-specific configuration
+    pub fn load_project_config() -> Result<Self> {
+        let config_path = Self::project_config_path()?;
+        Self::load_from(&config_path)
+    }
+    
+    /// Find the git repository root
+    fn find_git_root() -> Result<PathBuf> {
+        let current_dir = std::env::current_dir()?;
+        let repo = git2::Repository::discover(&current_dir)
+            .context("Not in a git repository")?;
+        
+        repo.workdir()
+            .ok_or_else(|| anyhow!("Repository has no working directory"))
+            .map(|p| p.to_path_buf())
+    }
+    
+    /// Merge another config into this one (project config overrides global)
+    pub fn merge(&mut self, other: SynapticConfig) {
+        // Merge sync config
+        if let Some(other_sync) = other.sync {
+            if let Some(ref mut sync) = self.sync {
+                if other_sync.default_depth.is_some() {
+                    sync.default_depth = other_sync.default_depth;
+                }
+                if other_sync.auto_deduplicate.is_some() {
+                    sync.auto_deduplicate = other_sync.auto_deduplicate;
+                }
+                if other_sync.dry_run.is_some() {
+                    sync.dry_run = other_sync.dry_run;
+                }
+            } else {
+                self.sync = Some(other_sync);
+            }
+        }
+        
+        // Merge obsidian config
+        if let Some(other_obsidian) = other.obsidian {
+            if let Some(ref mut obsidian) = self.obsidian {
+                // Don't override vault_path from project config (stays global)
+                if other_obsidian.synaptic_folder.is_some() {
+                    obsidian.synaptic_folder = other_obsidian.synaptic_folder;
+                }
+                if other_obsidian.project_subfolder.is_some() {
+                    obsidian.project_subfolder = other_obsidian.project_subfolder;
+                }
+                // Project name is project-specific
+                if other_obsidian.project_name.is_some() {
+                    obsidian.project_name = other_obsidian.project_name;
+                }
+                if other_obsidian.enable_wikilinks.is_some() {
+                    obsidian.enable_wikilinks = other_obsidian.enable_wikilinks;
+                }
+                if other_obsidian.enable_canvas.is_some() {
+                    obsidian.enable_canvas = other_obsidian.enable_canvas;
+                }
+                if other_obsidian.template_path.is_some() {
+                    obsidian.template_path = other_obsidian.template_path;
+                }
+                if other_obsidian.dataview.is_some() {
+                    obsidian.dataview = other_obsidian.dataview;
+                }
+            } else {
+                self.obsidian = Some(other_obsidian);
+            }
+        }
+        
+        // Merge commit types config
+        if let Some(other_commit_types) = other.commit_types {
+            if let Some(ref mut commit_types) = self.commit_types {
+                // Only merge scopes from project config (categories stay global)
+                if other_commit_types.scopes.is_some() {
+                    commit_types.scopes = other_commit_types.scopes;
+                }
+                // Merge additional types
+                if let Some(other_additional) = other_commit_types.additional {
+                    if let Some(ref mut additional) = commit_types.additional {
+                        additional.extend(other_additional);
+                    } else {
+                        commit_types.additional = Some(other_additional);
+                    }
+                }
+            } else {
+                self.commit_types = Some(other_commit_types);
+            }
+        }
+        
+        // Merge cleanup config (project can override)
+        if other.cleanup.is_some() {
+            self.cleanup = other.cleanup;
+        }
+        
+        // Merge query config (project can override)
+        if other.query.is_some() {
+            self.query = other.query;
+        }
+        
+        // Merge locations (project-specific)
+        if let Some(other_locations) = other.locations {
+            if let Some(ref mut locations) = self.locations {
+                locations.extend(other_locations);
+            } else {
+                self.locations = Some(other_locations);
+            }
+        }
     }
 
     /// Create default configuration
@@ -205,9 +334,10 @@ impl SynapticConfig {
                 dry_run: Some(false),
             }),
             obsidian: Some(ObsidianConfig {
-                vault_path: "~/Documents/ObsidianVault".to_string(),
+                vault_path: Some("~/Documents/ObsidianVault".to_string()),
                 synaptic_folder: Some("synaptic".to_string()),
                 project_subfolder: Some("projects".to_string()),
+                project_name: None, // Project-specific, not in global config
                 enable_wikilinks: Some(true),
                 enable_canvas: Some(true),
                 template_path: None,
@@ -345,6 +475,79 @@ impl SynapticConfig {
         
         Ok(())
     }
+    
+    /// Create a sample project configuration file
+    pub fn create_sample_project_config(project_name: &str) -> Result<()> {
+        let config_path = Self::project_config_path()?;
+        
+        if config_path.exists() {
+            return Err(anyhow!("Project config already exists at {}", config_path.display()));
+        }
+        
+        // Infer project name from git repo if not provided
+        let final_project_name = if project_name.is_empty() {
+            Self::infer_project_name()?
+        } else {
+            project_name.to_string()
+        };
+        
+        let project_config = Self {
+            sync: None, // Use global settings
+            obsidian: Some(ObsidianConfig {
+                vault_path: None, // Use global vault path
+                synaptic_folder: None, // Use global settings
+                project_subfolder: None, // Use global settings
+                project_name: Some(final_project_name.clone()),
+                enable_wikilinks: None, // Use global settings
+                enable_canvas: None, // Use global settings
+                template_path: None,
+                dataview: None, // Use global settings
+            }),
+            commit_types: Some(CommitTypesConfig {
+                additional: None, // Global only
+                override_types: None,
+                aliases: None, // Global only
+                categories: None, // Global only - SVCMS standard categories
+                scopes: Some(CommitTypeScopesConfig {
+                    modules: Some({
+                        let mut modules = std::collections::HashMap::new();
+                        // Add some example module scopes based on common patterns
+                        modules.insert("main".to_string(), ScopeConfig {
+                            categories: vec!["standard".to_string(), "knowledge".to_string()],
+                            custom_types: vec![],
+                        });
+                        modules
+                    }),
+                    cross_cutting: None,
+                    tooling: None,
+                    project_wide: None,
+                }),
+            }),
+            cleanup: None, // Use global settings
+            query: None, // Use global settings
+            locations: Some({
+                let mut locations = std::collections::HashMap::new();
+                locations.insert("main".to_string(), "src/CLAUDE.md".to_string());
+                locations
+            }),
+        };
+        
+        project_config.save_to(&config_path)?;
+        println!("📝 Created project config at {}", config_path.display());
+        println!("   Project name: {}", final_project_name);
+        println!("   Edit .synaptic/config.toml to add your project-specific scopes");
+        
+        Ok(())
+    }
+    
+    /// Infer project name from git repository
+    fn infer_project_name() -> Result<String> {
+        let git_root = Self::find_git_root()?;
+        git_root.file_name()
+            .and_then(|n| n.to_str())
+            .map(|s| s.to_string())
+            .ok_or_else(|| anyhow!("Could not infer project name from directory"))
+    }
 }
 
 #[cfg(test)]
@@ -372,7 +575,7 @@ synaptic_folder = "synaptic"
         
         let config: SynapticConfig = toml::from_str(toml_content).unwrap();
         assert_eq!(config.sync.unwrap().default_depth, Some(50));
-        assert_eq!(config.obsidian.unwrap().vault_path, "/test/vault");
+        assert_eq!(config.obsidian.unwrap().vault_path, Some("/test/vault".to_string()));
     }
 
     #[test]

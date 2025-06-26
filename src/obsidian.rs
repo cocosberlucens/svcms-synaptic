@@ -1,6 +1,6 @@
 //! Obsidian vault integration for Synaptic
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::fs;
 use std::io::Write;
 use anyhow::{Result, Context, anyhow};
