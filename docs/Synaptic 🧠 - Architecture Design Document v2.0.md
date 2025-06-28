@@ -83,20 +83,39 @@ This dual approach ensures we have both historical accuracy AND practical usabil
   - Traditional CLAUDE.md updates
   - Obsidian note generation
 
-#### 4. **Obsidian Manager** (New Component)
+#### 4. **Obsidian Manager** (Enhanced)
 
 ```rust
 pub struct ObsidianManager {
     vault_path: PathBuf,
+    synaptic_folder: String,
     template_engine: Handlebars,
-    link_enricher: WikilinkEnricher,
 }
 ```
 
-- **Vault Syncer**: Creates/updates notes from commits
-- **Template Renderer**: Converts SVCMS data to Obsidian format
-- **Wikilink Enricher**: Auto-creates `[[concept]]` links
-- **Post-commit Hook Integration**: Triggered automatically
+- **Vault Syncer**: Creates/updates notes from commits with project organization
+- **Template Renderer**: Converts SVCMS data to Obsidian format using Handlebars
+- **Wikilink Enricher**: Auto-creates `[[concept]]` links through concept extraction
+- **Project Organization**: Automatically organizes notes by project name
+
+#### 5. **Configuration Manager** (New Component)
+
+```rust
+pub struct SynapticConfig {
+    sync: Option<SyncConfig>,
+    obsidian: Option<ObsidianConfig>,
+    commit_types: Option<CommitTypesConfig>,
+    cleanup: Option<CleanupConfig>,
+    query: Option<QueryConfig>,
+    locations: Option<HashMap<String, String>>,
+}
+```
+
+**Layered Configuration System:**
+- **Global Config** (`~/.synaptic/config.toml`): Personal preferences, universal SVCMS categories
+- **Project Config** (`.synaptic/config.toml`): Team-shared project definitions, module scopes
+- **Smart Merging**: Project config extends/overrides global selectively
+- **Automatic Discovery**: Uses git repository discovery for project configs
 
 #### 5. **Query Engine** (Dual Mode)
 
@@ -235,7 +254,7 @@ aliases: ["{{commit_summary}}"]
 - [x] Scope-based inference
 - [x] Deduplication logic
 
-### Phase 2: Obsidian Integration ✅ (Complete - Week 3-4)
+### Phase 2: Obsidian Integration ✅ (Complete)
 
 - [x] Obsidian vault structure design
 - [x] ObsidianManager struct implementation
@@ -243,9 +262,11 @@ aliases: ["{{commit_summary}}"]
 - [x] Wikilink enrichment logic (concept extraction)
 - [x] Vault init command (synaptic vault init)
 - [x] Dual sync flow (CLAUDE.md + Obsidian notes)
-- [x] Config file reading for vault settings
-- [x] Automatic config creation with sample settings
-- [x] Config-aware sync command with Obsidian integration
+- [x] Layered configuration system (global + project configs)
+- [x] Smart config merging and discovery
+- [x] Project-specific scope definitions and custom types
+- [x] Automatic project organization in Obsidian vault
+- [x] Enhanced CLI with config initialization commands
 - [ ] Post-commit hook implementation (Phase 2.5)
 
 ### Phase 3: Dual Query Engine (Week 5-6)
@@ -281,23 +302,23 @@ aliases: ["{{commit_summary}}"]
 - **Templater plugin**: Note consistency
 - **Canvas plugin**: Visual architecture
 
-## Configuration (Enhanced)
+## Layered Configuration System
 
-`~/.synaptic/config.toml`:
+### Global Configuration (`~/.synaptic/config.toml`)
+
+**Personal preferences and universal SVCMS settings:**
 
 ```toml
 [sync]
 default_depth = 100
 auto_deduplicate = true
-dry_run = false
 
 [obsidian]
 vault_path = "~/Documents/ObsidianVault"
-synaptic_folder = "synaptic"        # Container folder within vault
-project_subfolder = "projects"      # Relative to synaptic_folder
+synaptic_folder = "synaptic"
+project_subfolder = "projects"
 enable_wikilinks = true
 enable_canvas = true
-template_path = "~/.synaptic/templates/commit.hbs"
 
 [obsidian.dataview]
 default_limit = 20
@@ -307,64 +328,77 @@ enable_inline_queries = true
 default_source = "unified"  # git | obsidian | unified
 show_context = true
 
-[locations]
-# Custom location mappings (for CLAUDE.md files)
-auth = "src/authentication/CLAUDE.md"
-db = "database/CLAUDE.md"
-
 [commit_types]
-# Legacy support for simple additional types
 additional = ["fixed", "decided"]
 
-# Type aliases for normalization (map variations to canonical types)
 [commit_types.aliases]
 fixed = "fix"
 decided = "decision"
-bugfix = "fix"
-feature = "feat"
 
-# Two-tier system with categories and scope permissions
+# Universal SVCMS categories (shared across all projects)
 [commit_types.categories.standard]
 description = "Standard Conventional Commits v1.0.0"
 types = ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"]
 
 [commit_types.categories.knowledge]
-description = "SVCMS Knowledge Types - discovered insights and learnings"
+description = "SVCMS Knowledge Types"
 types = ["learned", "insight", "context", "decision", "memory"]
 
 [commit_types.categories.collaboration]
-description = "SVCMS Collaboration Types - team interactions and explorations"
+description = "SVCMS Collaboration Types"
 types = ["discussed", "explored", "attempted"]
 
 [commit_types.categories.meta]
-description = "SVCMS Meta Types - process and methodology"
+description = "SVCMS Meta Types"
 types = ["workflow", "preference", "pattern"]
+```
 
-# Scope definitions with category permissions (matricial intersections)
+### Project Configuration (`.synaptic/config.toml`)
+
+**Team-shared project-specific definitions:**
+
+```toml
+[obsidian]
+project_name = "staff-scheduling-web-app"
+
 [commit_types.scopes.modules]
-# Module/component specific (typically under src/)
-auth = { categories = ["standard", "knowledge", "collaboration"], custom_types = ["integrated"] }
-api = { categories = ["standard", "knowledge"], custom_types = ["migrated"] }
-scheduler = { categories = ["all"], custom_types = [] }
-database = { categories = ["standard", "knowledge"], custom_types = ["seeded"] }
+auth = { categories = ["standard", "knowledge"], custom_types = ["integrated"] }
+scheduler = { categories = ["standard", "knowledge"], custom_types = ["optimized"] }
+shifts = { categories = ["standard", "knowledge"], custom_types = ["assigned"] }
+api = { categories = ["standard", "knowledge", "collaboration"], custom_types = [] }
 
 [commit_types.scopes.cross_cutting]
-# Cross-cutting concerns
-architecture = { categories = ["knowledge", "collaboration", "meta"], custom_types = [] }
 security = { categories = ["knowledge", "collaboration"], custom_types = ["audited"] }
-performance = { categories = ["standard", "knowledge"], custom_types = ["profiled"] }
+architecture = { categories = ["knowledge", "collaboration", "meta"], custom_types = [] }
 
-[commit_types.scopes.tooling]
-# Development tools and infrastructure
-eslint = { categories = ["standard", "meta"], custom_types = ["configured"] }
-webpack = { categories = ["standard", "knowledge"], custom_types = ["optimized"] }
-docker = { categories = ["standard", "knowledge"], custom_types = ["containerized"] }
-
-[commit_types.scopes.project_wide]
-# Project-level scopes
-project = { categories = ["all"], custom_types = [] }
-global = { categories = ["all"], custom_types = [] }
+[locations]
+auth = "src/auth/CLAUDE.md"
+scheduler = "src/scheduling/CLAUDE.md"
+shifts = "src/shifts/CLAUDE.md"
+api = "src/api/CLAUDE.md"
 ```
+
+### Configuration Benefits
+
+**Team Synchronization:**
+- Project configs live in git, automatically shared across team
+- Consistent commit type validation for all team members
+- Domain-specific types tailored to project architecture
+
+**Clean Separation:**
+- Personal preferences (vault path, cleanup settings) stay local
+- Project definitions (scopes, modules) are team-shared
+- No conflicts between personal and team settings
+
+**Perfect Fallback:**
+- Works seamlessly even without project config
+- Global config provides complete SVCMS functionality
+- Project config extends rather than replaces global settings
+
+**Automatic Organization:**
+- Project name drives Obsidian folder organization
+- Notes land in `vault/synaptic/projects/{project-name}/`
+- Clear separation between different projects in vault
 
 ## CLI Interface (Enhanced)
 
@@ -388,11 +422,11 @@ synaptic vault stats --project="sched"
 synaptic vault graph --scope="auth"
 synaptic vault canvas --type="architecture"
 
-# Project initialization (Enhanced)
-synaptic init                     # Complete setup: config + post-commit hook
-synaptic init --hook-only         # Install hook in existing setup
-synaptic init --no-hook           # Skip hook installation
-synaptic init --vault-path=PATH   # Specify Obsidian vault location
+# Configuration initialization (Enhanced)
+synaptic init                     # Show configuration options
+synaptic init --global            # Create global config (~/.synaptic/config.toml)
+synaptic init --project           # Create project config (.synaptic/config.toml)
+synaptic init --project --project-name="my-app"  # With specific project name
 
 # Utility commands
 synaptic stats                    # Show statistics from both sources
