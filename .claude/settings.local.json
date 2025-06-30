@@ -10,7 +10,9 @@
       "Bash(git commit:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:modelcontextprotocol.io)"
     ],
     "deny": []
   }

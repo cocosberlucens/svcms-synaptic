@@ -6,6 +6,19 @@
 
 Synaptic bridges Git commit history with Claude Code's memory system, implementing the SVCMS specification. It transforms semantic commits into queryable knowledge and automatically synchronizes insights to appropriate `CLAUDE.md` files.
 
+## Why SVCMS is Different: Git-Embedded Memory with Auto-Diff
+
+Unlike traditional AI memory tools that operate as external layers, SVCMS embeds memory directly into your git workflow. This means:
+
+- **Every memory has automatic code context**: When you commit `knowledge.learned(auth): JWT tokens expire after 24h`, the AI sees both the learning AND the exact code changes
+- **Diff-aware intelligence**: AI understands not just what you learned, but precisely what code changed when you learned it
+- **Self-documenting development**: Your git history becomes a queryable knowledge base with full code awareness
+- **Team knowledge sharing**: Shared repository = shared team intelligence
+
+## 🚀 Coming Soon: MCP Server Integration
+
+We're transforming Synaptic into an MCP (Model Context Protocol) server, making SVCMS a first-class citizen in AI development environments. [Read the full design specification →](docs/mcp-server-design.md)
+
 ## Features
 
 - 🔄 **Memory Sync**: Extract memories from SVCMS commits to `CLAUDE.md` files
