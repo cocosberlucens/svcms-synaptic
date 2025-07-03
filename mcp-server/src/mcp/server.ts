@@ -8,6 +8,14 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { 
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema
+} from '@modelcontextprotocol/sdk/types.js';
 import { logger } from '../utils/logger.js';
 import { GitClient } from '../git/client.js';
 import { ConfigLoader } from '../config/loader.js';
@@ -94,7 +102,7 @@ export class SvcmsMcpServer {
    */
   private setupResourceHandlers(): void {
     // List available resources
-    this.server.setRequestHandler('resources/list', async () => {
+    this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       const resources: McpResource[] = [
         {
           uri: 'svcms://specification',
@@ -126,7 +134,7 @@ export class SvcmsMcpServer {
     });
 
     // Handle resource reads
-    this.server.setRequestHandler('resources/read', async (request) => {
+    this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const { uri } = request.params;
 
       switch (uri) {
@@ -188,7 +196,7 @@ export class SvcmsMcpServer {
    */
   private setupToolHandlers(): void {
     // List available tools
-    this.server.setRequestHandler('tools/list', async () => {
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       const tools: McpTool[] = [
         {
           name: 'svcms_sync',
@@ -266,7 +274,7 @@ export class SvcmsMcpServer {
     });
 
     // Handle tool calls
-    this.server.setRequestHandler('tools/call', async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       try {
@@ -303,7 +311,7 @@ export class SvcmsMcpServer {
    */
   private setupPromptHandlers(): void {
     // List available prompts
-    this.server.setRequestHandler('prompts/list', async () => {
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
       const prompts: McpPrompt[] = [
         {
           name: 'analyze-changes',
@@ -330,7 +338,7 @@ export class SvcmsMcpServer {
     });
 
     // Handle prompt requests
-    this.server.setRequestHandler('prompts/get', async (request) => {
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
       switch (name) {
@@ -472,8 +480,8 @@ export class SvcmsMcpServer {
     const stats = {
       total_commits: commits.length,
       svcms_commits: commits.filter(c => c.parsed).length,
-      by_type: {},
-      by_category: {},
+      by_type: {} as Record<string, number>,
+      by_category: {} as Record<string, number>,
       memory_commits: commits.filter(c => c.parsed?.memory).length
     };
 

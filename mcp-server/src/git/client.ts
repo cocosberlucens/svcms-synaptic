@@ -5,7 +5,7 @@
  * This is the core of SVCMS's git-embedded memory system.
  */
 
-import simpleGit, { SimpleGit, LogResult, DiffResult } from 'simple-git';
+import { simpleGit, SimpleGit, LogResult, DiffResult } from 'simple-git';
 import { logger } from '../utils/logger.js';
 import type { SvcmsCommit, ParsedSvcmsCommit } from '../types.js';
 import { SvcmsParser } from '../svcms/parser.js';

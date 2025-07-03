@@ -221,11 +221,13 @@ export class ConfigLoader {
         auto_suggest_commits: true,
         include_diff_summaries: true
       },
-      obsidian: options.vault_path ? {
-        vault_path: options.vault_path,
-        use_dataview: true,
-        auto_generate_queries: true
-      } : undefined,
+      ...(options.vault_path && {
+        obsidian: {
+          vault_path: options.vault_path,
+          use_dataview: true,
+          auto_generate_queries: true
+        }
+      }),
       git: {
         diff_context_lines: 3,
         include_file_moves: true,
