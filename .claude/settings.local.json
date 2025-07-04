@@ -14,7 +14,9 @@
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:modelcontextprotocol.io)",
       "mcp__time__get_current_time",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

@@ -2,29 +2,47 @@
 
 ## Next Implementation Phases
 
-### 1. Add External Tool Integration (ast-grep, ripgrep)
-- [ ] **Tool Detection & Verification**
-  - Implement tool availability checking (`synaptic tools check`)
-  - Add tool installation verification in config loader
-  - Handle graceful fallbacks when tools are missing
+### 1. ✅ External Tool Integration (ast-grep, ripgrep) - COMPLETED
+- [x] **Tool Detection & Verification**
+  - ✅ Comprehensive tool availability checking with version detection
+  - ✅ Custom rules discovery in `./ast/` directory
+  - ✅ Custom tree-sitter grammars detection in `./.tree-sitter/`
+  - ✅ Graceful fallbacks when tools are missing
 
-- [ ] **AST-Grep Integration**
-  - Implement structural diff analysis using ast-grep patterns
-  - Add pattern-based commit suggestions (error handling, auth patterns, etc.)
-  - Create semantic code search for similar past changes
-  - Support configurable diff patterns from config.toml
+- [x] **AST-Grep Integration**
+  - ✅ Structural diff analysis using ast-grep patterns
+  - ✅ Pattern-based commit suggestions (error, auth, api, ui patterns)
+  - ✅ Semantic code search for similar past changes
+  - ✅ Project-specific patterns in config.toml with significance levels
 
-- [ ] **Ripgrep Integration**
-  - Ultra-fast content search across large codebases
-  - Context-optimized searches (extract minimal relevant info)
-  - Integration with SVCMS commit search for blazing performance
-  - Support ignore patterns and context lines from config
+- [x] **Ripgrep Integration**
+  - ✅ Fast content search with JSON output support
+  - ✅ Context-optimized searches with configurable ignore patterns
+  - ✅ Integration with SVCMS commit search
+  - ✅ Support for multiline and context lines configuration
 
-- [ ] **Enhanced MCP Tools**
-  - `svcms_analyze_commit_structural`: Deep structural analysis with ast-grep
-  - `svcms_search_patterns`: Pattern-based commit search
-  - `svcms_optimize_context`: Token-efficient context extraction
-  - Update existing tools to leverage external tools
+- [x] **Enhanced MCP Tools**
+  - ✅ `svcms_analyze_structural`: Deep structural analysis with ast-grep
+  - ✅ `svcms_suggest_commit`: Enhanced with pattern-based analysis
+  - ✅ `svcms_test_tools`: Tool capability verification and recommendations
+  - ✅ Updated existing tools to leverage external tools
+
+**New Configuration Options Added:**
+```toml
+[tools.ast_grep]
+enabled = true
+rules_directory = "./ast"              # Custom rules auto-discovery
+custom_grammars_dir = "./.tree-sitter" # Custom tree-sitter grammars
+project_patterns = [
+  { pattern = "useAuth($HOOK)", significance = "high", commit_hint = "auth" }
+]
+commit_analysis = {
+  error_patterns = ["throw new Error($MSG)", "console.error($MSG)"]
+  auth_patterns = ["jwt.sign($PAYLOAD)", "passport.authenticate($STRATEGY)"]
+  api_patterns = ["app.get($PATH, $HANDLER)", "fetch($URL)"]
+  ui_patterns = ["React.useState($INITIAL)", "useEffect($EFFECT)"]
+}
+```
 
 ### 2. Implement Memory Sync to CLAUDE.md Files
 - [ ] **Memory Extraction Engine**
@@ -102,7 +120,7 @@
 
 ✅ **Git-Embedded Memory**: Every memory tied to actual code changes  
 ✅ **Auto-Diff Awareness**: AI sees both learnings AND code context  
-🔄 **Tool-Enhanced Analysis**: ast-grep for structural understanding  
+✅ **Tool-Enhanced Analysis**: ast-grep for structural understanding  
 🔄 **Token-Efficient Context**: Smart extraction vs full file dumps  
 🔄 **Team-Scalable**: Shared git history = shared team intelligence  
 
@@ -113,18 +131,40 @@
   [commit_defaults]
   "src/api/*" = { scope = "api", category = "standard" }
   "src/auth/*" = { scope = "auth", category = "knowledge" }
+  "src/tools/*" = { scope = "tools", category = "knowledge" }
   ```
+
+- **Custom ast-grep Integration**: Auto-discovers project-specific customizations:
+  - Custom rules in `./ast/*.yml` files (following your pattern!)
+  - Custom tree-sitter grammars in `./.tree-sitter/*.so`
+  - Project-specific patterns for commit analysis
+  - Intelligent fallback when tools are unavailable
+
+- **Enhanced MCP Resources**:
+  - `svcms://tool-capabilities`: Real-time tool detection status
+  - `svcms://current-diff`: Live working directory changes
+  - `svcms://config`: Merged global and project configuration
+  - `svcms://specification`: AI-optimized SVCMS specification
 
 - **MCP Advantage**: All-in-one package vs standalone CLI:
   - Embedded specification (no external file reads)
   - Native Claude integration (tools, not commands)
   - Real-time context access (diffs, configs, memories)
   - Structured interface (clean types, not text parsing)
+  - Smart semantic analysis with ast-grep patterns
 
 - **Architecture Decision**: Keep Rust CLI for power users, MCP for AI integration
-  - MCP Server: AI-native workflow integration
+  - MCP Server: AI-native workflow integration with semantic analysis
   - Rust CLI: Batch operations, CI/CD, power user tools
+
+## Future Refinements Planned
+
+- **Enhanced Configuration Options**:
+  - `ast_grep_custom_grammars_folder`: Configurable grammar directory
+  - `ast_grep_custom_rules_folder`: Configurable rules directory
+  - More granular pattern matching and significance levels
+  - Project-specific commit type mappings
 
 ---
 
-*Next: Let's start with external tool integration - ast-grep will unlock semantic diff awareness!*
+*Next Priority: Implement memory sync to CLAUDE.md files with smart placement logic!*

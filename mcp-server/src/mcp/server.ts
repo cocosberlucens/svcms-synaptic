@@ -19,18 +19,27 @@ import {
 import { logger } from '../utils/logger.js';
 import { GitClient } from '../git/client.js';
 import { ConfigLoader } from '../config/loader.js';
+import { ToolDetector } from '../tools/detector.js';
+import { CodeAnalyzer } from '../tools/analyzer.js';
+import { MemoryManager } from '../memory/manager.js';
 import { SVCMS_SPECIFICATION, AI_WORKFLOW_INSTRUCTIONS, SVCMS_SPEC_COMPRESSED } from '../svcms/specification.js';
-import type { SvcmsConfig, McpTool, McpResource, McpPrompt } from '../types.js';
+import type { SvcmsConfig, McpTool, McpResource, McpPrompt, ToolCapabilities } from '../types.js';
 
 export class SvcmsMcpServer {
   private server: Server;
   private config: SvcmsConfig;
   private gitClient: GitClient;
+  private toolDetector: ToolDetector;
+  private codeAnalyzer?: CodeAnalyzer;
+  private memoryManager: MemoryManager;
+  private toolCapabilities?: ToolCapabilities;
   private transport?: StdioServerTransport;
 
   constructor(config: SvcmsConfig) {
     this.config = config;
     this.gitClient = new GitClient();
+    this.toolDetector = new ToolDetector();
+    this.memoryManager = new MemoryManager(config);
     
     // Initialize MCP server
     this.server = new Server(
@@ -60,6 +69,18 @@ export class SvcmsMcpServer {
       const isRepo = await this.gitClient.isRepository();
       if (!isRepo) {
         logger.warn('Not in a git repository - some features may be limited');
+      }
+
+      // Detect external tools capabilities
+      logger.info('🔍 Detecting external tool capabilities...');
+      this.toolCapabilities = await this.toolDetector.detectAll();
+
+      // Initialize code analyzer if tools are available
+      if (this.toolCapabilities.ast_grep.available || this.toolCapabilities.ripgrep.available) {
+        this.codeAnalyzer = new CodeAnalyzer(this.toolCapabilities, this.config);
+        logger.info('✅ Code analyzer initialized with external tools');
+      } else {
+        logger.warn('⚠️  No external tools available - commit suggestions will be basic');
       }
 
       // Create and connect transport
@@ -127,6 +148,12 @@ export class SvcmsMcpServer {
           name: 'Current Configuration',
           description: 'Merged global and project configuration',
           mimeType: 'application/json'
+        },
+        {
+          uri: 'svcms://tool-capabilities',
+          name: 'External Tool Capabilities',
+          description: 'Detected ast-grep, ripgrep and custom tool capabilities',
+          mimeType: 'application/json'
         }
       ];
 
@@ -182,6 +209,15 @@ export class SvcmsMcpServer {
               uri,
               mimeType: 'application/json',
               text: JSON.stringify(this.config, null, 2)
+            }]
+          };
+
+        case 'svcms://tool-capabilities':
+          return {
+            contents: [{
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(this.toolCapabilities || {}, null, 2)
             }]
           };
 
@@ -257,15 +293,89 @@ export class SvcmsMcpServer {
         },
         {
           name: 'svcms_suggest_commit',
-          description: 'AI analyzes diff and suggests semantic commit message',
+          description: 'AI analyzes diff and suggests semantic commit message with ast-grep patterns',
           inputSchema: {
             type: 'object',
             properties: {
               scope: { 
                 type: 'string', 
                 description: 'Optional scope for the commit' 
+              },
+              hint: {
+                type: 'string',
+                description: 'Optional hint about the nature of changes'
               }
             }
+          }
+        },
+        {
+          name: 'svcms_analyze_structural',
+          description: 'Deep structural analysis of code changes using ast-grep',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'Path to file for structural analysis'
+              },
+              pattern: {
+                type: 'string',
+                description: 'Optional specific ast-grep pattern to analyze'
+              }
+            }
+          }
+        },
+        {
+          name: 'svcms_test_tools',
+          description: 'Test external tool functionality and report capabilities',
+          inputSchema: {
+            type: 'object',
+            properties: {}
+          }
+        },
+        {
+          name: 'svcms_memory_stats',
+          description: 'Analyze memory statistics and quality across commits',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              depth: {
+                type: 'number',
+                description: 'Number of commits to analyze',
+                default: 200
+              },
+              since: {
+                type: 'string',
+                description: 'Analyze commits since date (YYYY-MM-DD)'
+              }
+            }
+          }
+        },
+        {
+          name: 'svcms_search_memories',
+          description: 'Search memories by pattern with filtering options',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              pattern: {
+                type: 'string',
+                description: 'Search pattern for memory content'
+              },
+              scope: {
+                type: 'string',
+                description: 'Filter by specific scope (e.g., auth, api)'
+              },
+              category: {
+                type: 'string',
+                description: 'Filter by category (knowledge, standard, etc.)'
+              },
+              limit: {
+                type: 'number',
+                description: 'Maximum number of results',
+                default: 10
+              }
+            },
+            required: ['pattern']
           }
         }
       ];
@@ -290,6 +400,18 @@ export class SvcmsMcpServer {
             
           case 'svcms_suggest_commit':
             return await this.handleSuggestCommitTool(args);
+
+          case 'svcms_analyze_structural':
+            return await this.handleStructuralAnalysisTool(args);
+
+          case 'svcms_test_tools':
+            return await this.handleTestToolsTool(args);
+
+          case 'svcms_memory_stats':
+            return await this.handleMemoryStatsTool(args);
+
+          case 'svcms_search_memories':
+            return await this.handleSearchMemoriesTool(args);
             
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -395,44 +517,61 @@ export class SvcmsMcpServer {
 
     logger.info(`Syncing memories (depth: ${depth}, dry_run: ${dryRun})`);
 
-    // Get commits with context
-    const commits = await this.gitClient.getCommitsWithContext({ limit: depth });
-    
-    // Filter for SVCMS commits with memories
-    const memoryCommits = commits.filter(commit => 
-      commit.parsed && commit.parsed.memory
-    );
+    try {
+      // Use memory manager for real sync operations
+      const report = await this.memoryManager.syncMemories({
+        config: this.config,
+        options: {
+          depth,
+          dry_run: dryRun,
+          backup: true, // Always create backups for safety
+          max_memories_per_file: 100 // Reasonable limit
+        }
+      });
 
-    const result = {
-      processed: commits.length,
-      memory_commits: memoryCommits.length,
-      memories_synced: dryRun ? 0 : memoryCommits.length,
-      dry_run: dryRun
-    };
+      // Format comprehensive response
+      const response = {
+        operation: dryRun ? 'Preview' : 'Sync Completed',
+        summary: {
+          commits_processed: report.commits_processed,
+          memories_extracted: report.memories_extracted,
+          memories_synced: report.memories_synced,
+          memories_skipped: report.memories_skipped,
+          files_created: report.files_created,
+          files_updated: report.files_updated
+        },
+        statistics: report.memory_stats,
+        preview: report.preview,
+        errors: report.errors,
+        warnings: report.warnings
+      };
 
-    if (dryRun) {
-      const preview = memoryCommits.slice(0, 5).map(commit => ({
-        sha: commit.sha.substring(0, 8),
-        type: commit.parsed?.type,
-        memory: commit.parsed?.memory,
-        location: commit.parsed?.location || 'inferred'
-      }));
+      // Add detailed preview for dry runs
+      if (dryRun && report.preview) {
+        response.preview = {
+          ...report.preview,
+          files_to_create: report.preview.files_to_create,
+          files_to_update: report.preview.files_to_update,
+          sample_memories: report.preview.sample_memories
+        };
+      }
 
       return {
         content: [{
           type: 'text',
-          text: `Sync Preview:\n${JSON.stringify({ result, preview }, null, 2)}`
+          text: `SVCMS Memory Sync ${dryRun ? 'Preview' : 'Results'}:\n\n${JSON.stringify(response, null, 2)}`
+        }]
+      };
+
+    } catch (error) {
+      logger.error('Memory sync failed:', error);
+      return {
+        content: [{
+          type: 'text',
+          text: `Memory sync failed: ${error}\n\nPlease check the logs for more details.`
         }]
       };
     }
-
-    // TODO: Implement actual memory sync to CLAUDE.md files
-    return {
-      content: [{
-        type: 'text',
-        text: `Memory sync completed:\n${JSON.stringify(result, null, 2)}`
-      }]
-    };
   }
 
   /**
@@ -508,8 +647,9 @@ export class SvcmsMcpServer {
    */
   private async handleSuggestCommitTool(args: any) {
     const scope = args?.scope;
+    const hint = args?.hint;
     
-    logger.info('Generating commit suggestion from diff');
+    logger.info('Generating enhanced commit suggestion from diff');
 
     const diff = await this.gitClient.getCurrentDiff();
     if (!diff) {
@@ -521,17 +661,333 @@ export class SvcmsMcpServer {
       };
     }
 
-    // Use parser to generate suggestion
-    const suggestion = this.gitClient['parser'].generateCommitSuggestion(diff, { scope });
+    if (this.codeAnalyzer) {
+      // Use enhanced analyzer with ast-grep patterns
+      try {
+        const suggestion = await this.codeAnalyzer.analyzeDiffForCommit(diff, { scope, hint });
+        
+        const scopePart = suggestion.scope ? `(${suggestion.scope})` : '';
+        const commitMessage = `${suggestion.category}.${suggestion.type}${scopePart}: ${suggestion.summary}`;
 
-    const scopePart = suggestion.scope ? `(${suggestion.scope})` : '';
-    const commitMessage = `${suggestion.category}.${suggestion.type}${scopePart}: ${suggestion.summary}`;
+        const response = {
+          suggested_commit: commitMessage,
+          confidence: Math.round(suggestion.confidence * 100),
+          reasoning: suggestion.reasoning,
+          detected_patterns: suggestion.detected_patterns,
+          analysis: {
+            category: suggestion.category,
+            type: suggestion.type,
+            scope: suggestion.scope
+          }
+        };
 
+        return {
+          content: [{
+            type: 'text',
+            text: `Enhanced Commit Suggestion:\n\n${JSON.stringify(response, null, 2)}`
+          }]
+        };
+
+      } catch (error) {
+        logger.warn('Enhanced analysis failed, falling back to basic:', error);
+      }
+    }
+
+    // Fallback to basic suggestion
+    const basicSuggestion = this.generateBasicCommitSuggestion(diff, { scope, hint });
+    
     return {
       content: [{
         type: 'text',
-        text: `Suggested commit (confidence: ${Math.round(suggestion.confidence * 100)}%):\n\n${commitMessage}\n\nDiff analysis:\n${diff.split('\n').slice(0, 10).join('\n')}...`
+        text: `Basic commit suggestion:\n\n${basicSuggestion}\n\n💡 Install ast-grep for enhanced pattern analysis`
       }]
     };
+  }
+
+  /**
+   * Handle structural analysis tool execution
+   */
+  private async handleStructuralAnalysisTool(args: any) {
+    const filePath = args?.file_path;
+    const pattern = args?.pattern;
+
+    if (!this.codeAnalyzer || !this.toolCapabilities?.ast_grep.available) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'ast-grep not available for structural analysis'
+        }]
+      };
+    }
+
+    if (!filePath) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'file_path parameter is required for structural analysis'
+        }]
+      };
+    }
+
+    try {
+      const results = await this.codeAnalyzer.analyzeStructuralPatterns(filePath);
+      
+      return {
+        content: [{
+          type: 'text',
+          text: `Structural analysis for ${filePath}:\n\n${JSON.stringify(results, null, 2)}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Failed to analyze ${filePath}: ${error}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Handle test tools functionality
+   */
+  private async handleTestToolsTool(args: any) {
+    if (!this.toolCapabilities) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'Tool capabilities not detected yet'
+        }]
+      };
+    }
+
+    try {
+      const testResults = await this.toolDetector.testTools(this.toolCapabilities);
+      
+      const report = {
+        tool_capabilities: this.toolCapabilities,
+        test_results: testResults,
+        recommendations: this.generateToolRecommendations()
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: `Tool Functionality Test:\n\n${JSON.stringify(report, null, 2)}`
+        }]
+      };
+
+    } catch (error) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Tool testing failed: ${error}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Generate basic commit suggestion fallback
+   */
+  private generateBasicCommitSuggestion(diff: string, options: { scope?: string; hint?: string }): string {
+    const lines = diff.split('\n');
+    let additions = 0;
+    let deletions = 0;
+
+    for (const line of lines) {
+      if (line.startsWith('+') && !line.startsWith('+++')) additions++;
+      if (line.startsWith('-') && !line.startsWith('---')) deletions++;
+    }
+
+    let type = 'chore';
+    if (diff.includes('new file mode')) type = 'feat';
+    else if (diff.includes('deleted file mode')) type = 'refactor';
+    else if (additions > deletions) type = 'feat';
+    else if (deletions > additions) type = 'refactor';
+
+    const scope = options.scope || options.hint || '';
+    const scopePart = scope ? `(${scope})` : '';
+    
+    return `standard.${type}${scopePart}: update implementation`;
+  }
+
+  /**
+   * Generate tool recommendations based on capabilities
+   */
+  private generateToolRecommendations(): string[] {
+    const recommendations: string[] = [];
+
+    if (!this.toolCapabilities?.ast_grep.available) {
+      recommendations.push('Install ast-grep for enhanced structural code analysis');
+      recommendations.push('Consider adding custom ast-grep rules in ./ast/ directory');
+    }
+
+    if (!this.toolCapabilities?.ripgrep.available) {
+      recommendations.push('Install ripgrep for fast content search across large codebases');
+    }
+
+    if (this.toolCapabilities?.ast_grep.custom_rules.length === 0) {
+      recommendations.push('Add project-specific ast-grep rules for better commit suggestions');
+    }
+
+    if (this.toolCapabilities?.ast_grep.custom_grammars.length === 0) {
+      recommendations.push('Consider adding custom tree-sitter grammars for specialized languages');
+    }
+
+    return recommendations;
+  }
+
+  /**
+   * Handle memory stats tool execution
+   */
+  private async handleMemoryStatsTool(args: any) {
+    const depth = args?.depth || 200;
+    const since = args?.since;
+
+    logger.info(`Analyzing memory statistics (depth: ${depth}, since: ${since})`);
+
+    try {
+      const stats = await this.memoryManager.getMemoryStats({
+        depth,
+        since
+      });
+
+      const response = {
+        analysis: {
+          commits_analyzed: stats.commits_analyzed,
+          memories_found: stats.memories_found,
+          memory_density: Math.round((stats.memories_found / stats.commits_analyzed) * 100) + '%'
+        },
+        distribution: stats.stats,
+        quality_issues: {
+          total_issues: stats.validation_issues.length,
+          issues: stats.validation_issues.slice(0, 10) // First 10 issues
+        },
+        recommendations: await this.generateStatsRecommendations(stats)
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: `Memory Statistics Analysis:\n\n${JSON.stringify(response, null, 2)}`
+        }]
+      };
+
+    } catch (error) {
+      logger.error('Memory stats analysis failed:', error);
+      return {
+        content: [{
+          type: 'text',
+          text: `Memory stats analysis failed: ${error}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Handle search memories tool execution
+   */
+  private async handleSearchMemoriesTool(args: any) {
+    const pattern = args?.pattern;
+    const scope = args?.scope;
+    const category = args?.category;
+    const limit = args?.limit || 10;
+
+    if (!pattern) {
+      return {
+        content: [{
+          type: 'text',
+          text: 'Pattern parameter is required for memory search'
+        }]
+      };
+    }
+
+    logger.info(`Searching memories for pattern: ${pattern}`);
+
+    try {
+      const memories = await this.memoryManager.searchMemories(pattern, {
+        scope,
+        category,
+        limit
+      });
+
+      const results = memories.map(memory => ({
+        content: memory.content,
+        commit: memory.commit_sha.substring(0, 8),
+        date: memory.commit_date.toISOString().split('T')[0],
+        author: memory.author,
+        scope: memory.scope,
+        category: memory.category,
+        type: memory.type,
+        location: memory.location,
+        tags: memory.tags
+      }));
+
+      const response = {
+        search: {
+          pattern,
+          filters: { scope, category },
+          results_found: results.length,
+          showing: Math.min(results.length, limit)
+        },
+        memories: results
+      };
+
+      return {
+        content: [{
+          type: 'text',
+          text: `Memory Search Results:\n\n${JSON.stringify(response, null, 2)}`
+        }]
+      };
+
+    } catch (error) {
+      logger.error('Memory search failed:', error);
+      return {
+        content: [{
+          type: 'text',
+          text: `Memory search failed: ${error}`
+        }]
+      };
+    }
+  }
+
+  /**
+   * Generate recommendations based on memory stats
+   */
+  private async generateStatsRecommendations(stats: any): Promise<string[]> {
+    const recommendations: string[] = [];
+
+    // Memory density recommendations
+    const density = (stats.memories_found / stats.commits_analyzed) * 100;
+    
+    if (density < 20) {
+      recommendations.push('Consider adding more Memory: fields to commits for better knowledge capture');
+      recommendations.push('Focus on learning-oriented commits (knowledge.learned, knowledge.insight)');
+    } else if (density > 80) {
+      recommendations.push('High memory density detected - ensure memories are meaningful, not verbose');
+    }
+
+    // Distribution analysis
+    const locationCount = Object.keys(stats.stats.by_location).length;
+    if (locationCount === 1) {
+      recommendations.push('Memories are all going to one location - consider using specific scopes');
+      recommendations.push('Use explicit Location: fields for better organization');
+    }
+
+    // Quality issues
+    if (stats.validation_issues.length > stats.memories_found * 0.3) {
+      recommendations.push('Many memory quality issues detected - focus on more specific insights');
+      recommendations.push('Aim for 50-200 character memory entries with concrete details');
+    }
+
+    // Category diversity
+    const categoryCount = Object.keys(stats.stats.by_category).length;
+    if (categoryCount <= 1) {
+      recommendations.push('Consider using different SVCMS categories: knowledge, collaboration, meta');
+    }
+
+    return recommendations;
   }
 }

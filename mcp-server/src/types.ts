@@ -47,6 +47,34 @@ export interface ProjectConfig {
   svcms?: Partial<SvcmsSettings>;
   commit_defaults?: Record<string, CommitDefault>;
   code_awareness?: CodeAwarenessConfig;
+  tools?: ProjectToolsConfig;
+}
+
+export interface ProjectToolsConfig {
+  ast_grep?: ProjectAstGrepConfig;
+}
+
+export interface ProjectAstGrepConfig {
+  enabled: boolean;
+  default_lang?: string;
+  rules_directory: string;
+  custom_grammars_dir: string;
+  project_patterns: ProjectPattern[];
+  commit_analysis: ProjectCommitAnalysis;
+}
+
+export interface ProjectPattern {
+  pattern: string;
+  significance: 'low' | 'medium' | 'high';
+  commit_hint?: string;
+  description?: string;
+}
+
+export interface ProjectCommitAnalysis {
+  error_patterns: string[];
+  auth_patterns: string[];
+  api_patterns: string[];
+  ui_patterns: string[];
 }
 
 export interface SvcmsSettings {
@@ -159,6 +187,50 @@ export interface Memory {
   tags: string[];
   location: string;
   created_at: Date;
+}
+
+// Tool Capabilities Types
+export interface ToolCapabilities {
+  ast_grep: AstGrepCapabilities;
+  ripgrep: RipgrepCapabilities;
+  detection_timestamp: string;
+}
+
+export interface AstGrepCapabilities {
+  available: boolean;
+  version: string | null;
+  executable_path: string | null;
+  supported_languages: string[];
+  custom_rules: CustomAstGrepRule[];
+  custom_grammars: string[];
+  rules_directory: string | null;
+  grammars_directory: string | null;
+}
+
+export interface RipgrepCapabilities {
+  available: boolean;
+  version: string | null;
+  executable_path: string | null;
+  supports_json: boolean;
+  supports_multiline: boolean;
+}
+
+export interface CustomAstGrepRule {
+  name: string;
+  file_path: string;
+  description: string;
+  language: string;
+  significance: 'low' | 'medium' | 'high';
+}
+
+export interface CommitSuggestion {
+  category: string;
+  type: string;
+  scope?: string;
+  summary: string;
+  confidence: number;
+  reasoning: string[];
+  detected_patterns: string[];
 }
 
 // MCP Types

@@ -84,6 +84,27 @@ const GlobalConfigSchema = z.object({
   tools: ToolsConfigSchema.default({})
 });
 
+const ProjectPatternSchema = z.object({
+  pattern: z.string(),
+  significance: z.enum(['low', 'medium', 'high']),
+  commit_hint: z.string().optional(),
+  description: z.string().optional()
+});
+
+const ProjectAstGrepSchema = z.object({
+  enabled: z.boolean().default(true),
+  default_lang: z.string().optional(),
+  rules_directory: z.string().default('./ast'),
+  custom_grammars_dir: z.string().default('./.tree-sitter'),
+  project_patterns: z.array(ProjectPatternSchema).default([]),
+  commit_analysis: z.object({
+    error_patterns: z.array(z.string()).default([]),
+    auth_patterns: z.array(z.string()).default([]),
+    api_patterns: z.array(z.string()).default([]),
+    ui_patterns: z.array(z.string()).default([])
+  }).default({})
+}).optional();
+
 const ProjectConfigSchema = z.object({
   project: z.object({
     name: z.string()
@@ -100,6 +121,9 @@ const ProjectConfigSchema = z.object({
   })).optional(),
   code_awareness: z.object({
     important_patterns: z.array(z.string()).default([])
+  }).optional(),
+  tools: z.object({
+    ast_grep: ProjectAstGrepSchema
   }).optional()
 });
 
@@ -287,15 +311,78 @@ export class ConfigLoader {
       commit_defaults: {
         'src/api/*': { scope: 'api', category: 'standard' },
         'src/auth/*': { scope: 'auth', category: 'knowledge' },
-        'src/ui/*': { scope: 'ui', category: 'standard' }
+        'src/ui/*': { scope: 'ui', category: 'standard' },
+        'src/tools/*': { scope: 'tools', category: 'knowledge' },
+        'src/config/*': { scope: 'config', category: 'standard' }
       },
       code_awareness: {
         important_patterns: [
           'TODO',
           'FIXME',
           'Memory:',
-          '@deprecated'
+          '@deprecated',
+          'HACK',
+          'NOTE'
         ]
+      },
+      tools: {
+        ast_grep: {
+          enabled: true,
+          rules_directory: './ast',
+          custom_grammars_dir: './.tree-sitter',
+          project_patterns: [
+            {
+              pattern: 'useAuth($HOOK)',
+              significance: 'high',
+              commit_hint: 'auth',
+              description: 'Authentication hook usage'
+            },
+            {
+              pattern: 'router.push($PATH)',
+              significance: 'medium',
+              commit_hint: 'navigation',
+              description: 'Navigation changes'
+            },
+            {
+              pattern: 'fetch($URL)',
+              significance: 'medium',
+              commit_hint: 'api',
+              description: 'API calls'
+            },
+            {
+              pattern: 'useState($STATE)',
+              significance: 'low',
+              commit_hint: 'ui',
+              description: 'React state usage'
+            }
+          ],
+          commit_analysis: {
+            error_patterns: [
+              'throw new Error($MSG)',
+              'console.error($MSG)',
+              'logger.error($MSG)',
+              'reject($REASON)'
+            ],
+            auth_patterns: [
+              'jwt.sign($PAYLOAD)',
+              'passport.authenticate($STRATEGY)',
+              'bcrypt.hash($PASSWORD)',
+              'verifyToken($TOKEN)'
+            ],
+            api_patterns: [
+              'app.get($PATH, $HANDLER)',
+              'app.post($PATH, $HANDLER)',
+              'express.Router()',
+              'axios.get($URL)'
+            ],
+            ui_patterns: [
+              'React.useState($INITIAL)',
+              'useEffect($EFFECT)',
+              'component.render()',
+              'styled.div`$STYLES`'
+            ]
+          }
+        }
       }
     };
     
@@ -303,5 +390,7 @@ export class ConfigLoader {
     await fs.writeFile(this.PROJECT_CONFIG_PATH, tomlContent);
     
     logger.info(`✅ Project configuration created at: ${this.PROJECT_CONFIG_PATH}`);
+    logger.info(`💡 Consider adding custom ast-grep rules to ./ast/ directory`);
+    logger.info(`💡 Custom tree-sitter grammars can be placed in ./.tree-sitter/ directory`);
   }
 }

@@ -23,10 +23,11 @@ The SVCMS Synaptic MCP Server implements the Semantic Version Control Memory Sys
 - **Project config**: `./.synaptic/config.toml` for team-shared settings
 - **Intelligent merging**: Project overrides global with fallbacks
 
-### 🎯 External Tool Integration (Coming Soon)
-- **ast-grep**: Structural code analysis beyond text matching
-- **ripgrep**: Blazing-fast searches with context optimization
-- **Custom tools**: Domain-specific analyzers
+### 🎯 External Tool Integration ✅
+- **ast-grep**: Structural code analysis with custom rules & grammars auto-discovery
+- **ripgrep**: Blazing-fast searches with JSON output and context optimization  
+- **Custom patterns**: Project-specific semantic analysis for better commit suggestions
+- **Intelligent fallback**: Works without tools, enhanced with them
 
 ## Installation
 
@@ -34,6 +35,12 @@ The SVCMS Synaptic MCP Server implements the Semantic Version Control Memory Sys
 - Node.js >= 18.0.0
 - TypeScript
 - Git repository
+
+### Optional Enhanced Tools
+- **ast-grep** (`cargo install ast-grep` or `npm install -g @ast-grep/cli`)
+- **ripgrep** (`cargo install ripgrep` or `brew install ripgrep`)
+- Custom rules in `./ast/*.yml` for project-specific patterns
+- Custom tree-sitter grammars in `./.tree-sitter/*.so`
 
 ### Build from Source
 ```bash
@@ -82,13 +89,16 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 - **`svcms_sync`**: Sync memories from commits to CLAUDE.md files
 - **`svcms_query`**: Search commits with full diff context
 - **`svcms_stats`**: Show SVCMS commit statistics and patterns
-- **`svcms_suggest_commit`**: AI analyzes diff and suggests semantic commit
+- **`svcms_suggest_commit`**: Enhanced AI analysis with ast-grep patterns
+- **`svcms_analyze_structural`**: Deep structural code analysis using ast-grep
+- **`svcms_test_tools`**: Test external tool capabilities and get recommendations
 
 #### Resources
 - **`svcms://specification`**: Complete SVCMS spec in AI-optimized format
 - **`svcms://workflow-guide`**: AI development workflow instructions
 - **`svcms://current-diff`**: Real-time working directory changes
 - **`svcms://config`**: Current merged configuration
+- **`svcms://tool-capabilities`**: External tool detection status and capabilities
 
 #### Prompts
 - **`analyze-changes`**: Analyze current diff and suggest SVCMS commit
@@ -140,6 +150,22 @@ name = "my-awesome-project"
 
 [code_awareness]
 important_patterns = ["TODO", "FIXME", "Memory:", "@deprecated"]
+
+[tools.ast_grep]
+enabled = true
+rules_directory = "./ast"
+custom_grammars_dir = "./.tree-sitter"
+project_patterns = [
+  { pattern = "useAuth($HOOK)", significance = "high", commit_hint = "auth" },
+  { pattern = "router.push($PATH)", significance = "medium", commit_hint = "navigation" },
+  { pattern = "fetch($URL)", significance = "medium", commit_hint = "api" }
+]
+
+[tools.ast_grep.commit_analysis]
+error_patterns = ["throw new Error($MSG)", "console.error($MSG)"]
+auth_patterns = ["jwt.sign($PAYLOAD)", "passport.authenticate($STRATEGY)"]
+api_patterns = ["app.get($PATH, $HANDLER)", "fetch($URL)"]
+ui_patterns = ["React.useState($INITIAL)", "useEffect($EFFECT)"]
 ```
 
 ## Development
@@ -156,6 +182,9 @@ src/
 │   └── loader.ts         # Layered TOML configuration
 ├── git/
 │   └── client.ts         # Git operations with diff awareness
+├── tools/                # 🆕 External tool integration
+│   ├── detector.ts       # Tool detection and capabilities
+│   └── analyzer.ts       # Code analysis with ast-grep
 ├── mcp/
 │   └── server.ts         # Main MCP server implementation
 └── utils/
