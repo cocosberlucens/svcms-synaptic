@@ -36,3 +36,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+#synaptic personal docs
+docs/my-system-wide-config.toml
+docs/vigilant-chrysalis-project-wide-config.toml
