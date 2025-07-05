@@ -1,0 +1,49 @@
+# SVCMS Synaptic - Project-wide Configuration
+# Location: .synaptic/config.toml
+# Minimal exceptions-only configuration (committed to git)
+
+[project]
+name = "svcms-synaptic"
+description = "SVCMS MCP Server - Git-embedded memory system"
+language = "typescript"
+
+[obsidian]
+# Project organization within Obsidian vault
+project_name = "svcms-synaptic"
+# Will create: vault/synaptic/projects/svcms-synaptic/
+
+# Only specify exceptions to auto-discovery
+[modules]
+# Most modules auto-discovered from src/ directory structure
+# Only specify modules that need non-default categories or custom behaviors
+memory = { categories = ["standard", "knowledge", "collaboration"] }  # Add collaboration for team discussions
+mcp = { categories = ["standard", "knowledge"] }  # Default is fine, shown for clarity
+
+# Cross-cutting concerns that can't be auto-discovered
+[cross_cutting]
+architecture = { location = "docs/architecture/CLAUDE.md", categories = ["knowledge", "collaboration"] }
+testing = { location = "tests/CLAUDE.md", categories = ["standard", "knowledge"] }
+documentation = { location = "docs/CLAUDE.md", categories = ["standard", "collaboration"] }
+security = { location = "docs/security/CLAUDE.md", categories = ["knowledge", "collaboration"] }
+
+# Optional: Project-specific tool configuration (if needed)
+[tools]
+# Only specify if you have custom ast-grep rules or grammars
+[tools.ast_grep]
+# custom_rules_folder = "./ast/rules"      # Uncomment if you have custom rules
+# custom_grammars_folder = "./ast/grammars" # Uncomment if you have custom grammars
+
+# Optional: Project-specific patterns for domain analysis
+[domain_patterns]
+# Only specify if you want enhanced commit suggestions for this domain
+mcp_concepts = ["server", "client", "tool", "resource", "prompt", "schema"]
+svcms_concepts = ["commit", "memory", "sync", "semantic", "knowledge"]
+typescript_concepts = ["interface", "type", "class", "async", "Promise"]
+
+# Optional: Team conventions (discovered through SVCMS usage)
+[team_conventions]
+# These can be automatically inferred from commit history over time
+code_style = "clean, maintainable, well-documented"
+commit_style = "semantic with memory fields"
+testing_style = "describe/it blocks preferred"
+architecture_style = "layered with clear separation"

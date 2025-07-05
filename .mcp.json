@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "svcms-synaptic": {
+      "type": "stdio",
+      "command": "/Users/corrado/miei-repo/svcms-synaptic/build/index.js",
+      "args": [],
+      "env": {}
+    }
+  }
+}

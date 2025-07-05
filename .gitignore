@@ -1,9 +1,33 @@
-# Rust
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build outputs
+build/
+dist/
+*.tsbuildinfo
+
+# Rust (legacy - removed but good to keep)
 target/
 Cargo.lock
-**/*.rs.bk
 
-# Editor
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory
+coverage/
+*.lcov
+
+# Environment variables
+.env
+.env.test
+.env.local
+.env.production
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -12,16 +36,3 @@ Cargo.lock
 # OS
 .DS_Store
 Thumbs.db
-
-# Synaptic
-.synaptic/
-*.log
-
-# VSCode Workspace
-svcms-synaptic.code-workspace
-
-# .claude
-.claude/settings.local.json
-
-# .serena
-.serena/project.yml

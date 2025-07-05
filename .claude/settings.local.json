@@ -19,5 +19,9 @@
       "Bash(npm run build:*)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "svcms-synaptic"
+  ],
+  "enableAllProjectMcpServers": true
 }

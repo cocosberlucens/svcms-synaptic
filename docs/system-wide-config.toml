@@ -1,0 +1,238 @@
+# SVCMS Synaptic - System-wide Configuration
+# Location: ~/.synaptic/config.toml
+# Universal settings for zero-config operation
+
+[personal]
+name = "Corrado Berlucchi"
+email = "corrado@example.com"
+# Coding preferences discovered through SVCMS
+coding_style = "clean, maintainable, well-documented"
+test_framework_preference = "describe/it syntax over test()"
+architecture_preference = "repository pattern, microservices"
+
+[obsidian]
+# Obsidian vault path for memory organization
+vault_path = "~/Documents/Obsidian/DevMemories"
+# Global folder structure within vault
+global_folder = "synaptic/global"
+projects_folder = "synaptic/projects"
+# Template for memory entries
+memory_template = "- {content}: {commit_type} `{commit_message}` ({commit_short}) [{tags}]"
+
+[commit_types]
+# Universal SVCMS categories - work across all projects
+[commit_types.categories]
+standard = [
+    "feat", "fix", "docs", "style", "refactor", 
+    "perf", "test", "build", "ci", "chore"
+]
+knowledge = [
+    "learned", "insight", "context", "decision", "memory"
+]
+collaboration = [
+    "discussed", "explored", "attempted"
+]
+meta = [
+    "workflow", "preference", "pattern"
+]
+
+# Universal development types - comprehensive vocabulary for all projects
+[commit_types.development_types]
+# Implementation & Construction
+validated = "Validation logic implemented"
+implemented = "Implementation finished"
+enhanced = "Enhancement applied"
+integrated = "Integration completed"
+configured = "Configuration updated"
+constructed = "Construction completed"
+assembled = "Assembly completed"
+built = "Build process completed"
+
+# Code Quality & Structure
+optimized = "Performance optimized"
+refactored = "Code restructured"
+cleaned = "Code cleanup completed"
+standardized = "Standards applied"
+formatted = "Formatting applied"
+linted = "Linting applied"
+typed = "Type definitions added"
+
+# Security & Reliability
+secured = "Security measures applied"
+hardened = "Security hardening applied"
+validated = "Input validation added"
+sanitized = "Data sanitization applied"
+authenticated = "Authentication implemented"
+authorized = "Authorization implemented"
+
+# Data & Migration
+migrated = "Migration completed"
+seeded = "Data seeding completed"
+backed_up = "Backup created"
+restored = "Restore completed"
+synced = "Synchronization completed"
+extracted = "Data extraction completed"
+transformed = "Data transformation completed"
+loaded = "Data loading completed"
+
+# Architecture & Design
+designed = "Design established"
+architected = "Architecture defined"
+modeled = "Data model created"
+structured = "Structure defined"
+organized = "Organization improved"
+separated = "Separation of concerns applied"
+abstracted = "Abstraction layer added"
+
+# Testing & Quality Assurance
+tested = "Testing completed"
+verified = "Verification completed"
+validated = "Validation completed"
+benchmarked = "Benchmarking completed"
+profiled = "Performance profiling completed"
+monitored = "Monitoring implemented"
+traced = "Tracing implemented"
+
+# Connection & Communication
+connected = "Connection established"
+integrated = "Integration completed"
+linked = "Linking completed"
+bridged = "Bridge implementation completed"
+interfaced = "Interface implementation completed"
+proxied = "Proxy implementation completed"
+routed = "Routing implementation completed"
+
+# Processing & Analysis
+parsed = "Parsing logic implemented"
+analyzed = "Analysis completed"
+processed = "Processing completed"
+computed = "Computation completed"
+calculated = "Calculation completed"
+aggregated = "Aggregation completed"
+filtered = "Filtering completed"
+sorted = "Sorting completed"
+
+# Detection & Discovery
+detected = "Detection logic implemented"
+discovered = "Discovery process completed"
+identified = "Identification completed"
+recognized = "Recognition completed"
+classified = "Classification completed"
+categorized = "Categorization completed"
+indexed = "Indexing completed"
+
+# Deployment & Operations
+deployed = "Deployment completed"
+published = "Publishing completed"
+released = "Release completed"
+installed = "Installation completed"
+configured = "Configuration completed"
+provisioned = "Provisioning completed"
+scaled = "Scaling completed"
+
+# Global type aliases for convenience
+[commit_types.aliases]
+decided = "decision"
+found = "learned"
+tried = "attempted"
+discovered = "insight"
+
+# Default behavior for zero-config operation
+[commit_types.defaults]
+default_category = "standard"
+legacy_support = true  # Support single-tier formats
+auto_discover_modules = true  # Enable src/ directory scanning
+
+[auto_discovery]
+# Zero-config module discovery settings
+enabled = true
+scan_directories = ["src"]  # Directories to scan for modules
+create_claude_files = true  # Auto-create CLAUDE.md files
+claude_file_template = "# {module_name} Module\n\n## SVCMS Memories\n\n*Automatically synced by Synaptic*\n\n"
+
+# Default module categories for auto-discovered modules
+[auto_discovery.defaults]
+categories = ["standard", "knowledge"]  # Default categories for all auto-discovered modules
+cross_cutting_location = "docs/{scope}/CLAUDE.md"  # Pattern for cross-cutting concerns
+
+# Universal module patterns for auto-discovery
+[auto_discovery.patterns]
+# These patterns work across most projects
+common_modules = ["api", "auth", "config", "database", "db", "models", "services", "utils", "lib", "core"]
+frontend_modules = ["components", "views", "ui", "pages", "routes", "store", "state"]
+backend_modules = ["controllers", "middleware", "handlers", "routes", "endpoints", "api"]
+testing_modules = ["tests", "test", "spec", "__tests__"]
+build_modules = ["build", "dist", "scripts", "tools"]
+
+[memory_sync]
+# Universal sync behavior
+auto_sync = true
+create_backups = true
+backup_directory = ".synaptic/backups"
+max_backups = 10
+
+# Universal file locations
+[memory_sync.locations]
+project_wide = "CLAUDE.md"  # Project-wide insights
+user_preferences = "~/.claude/CLAUDE.md"  # Global user preferences
+module_pattern = "src/{module}/CLAUDE.md"  # Auto-discovered modules
+
+[memory_sync.formatting]
+# Universal memory formatting
+include_commit_hash = true
+include_author = false  # Usually redundant in personal projects
+include_date = true
+sort_by = "date"  # "date", "type", "scope"
+group_by = "scope"  # "scope", "type", "date", "none"
+
+[tools]
+# Universal tool preferences
+[tools.ast_grep]
+enabled = true
+version_check = true
+prefer_json_output = true
+auto_detect_language = true
+
+[tools.ripgrep]
+enabled = true
+version_check = true
+use_json_output = true
+multiline_support = true
+smart_case = true
+
+[quality]
+# Universal quality preferences
+[quality.validation]
+require_memory_field = true
+require_scope = true
+max_summary_length = 72
+warn_on_empty_body = true
+suggest_tags = true
+
+[quality.suggestions]
+# AI-powered suggestion preferences
+enable_semantic_analysis = true
+confidence_threshold = 70
+prefer_two_tier_format = true
+suggest_scope_improvements = true
+
+[workflow]
+# Universal workflow preferences
+[workflow.git]
+prefer_empty_commits_for_decisions = true
+auto_add_memory_location = true
+suggest_commit_after_major_changes = true
+
+[workflow.claude_code]
+sync_before_session_end = true
+search_memories_for_context = true
+suggest_commits_during_work = true
+
+# Universal commit analysis patterns
+[patterns]
+# These patterns work across all programming languages and projects
+decision_keywords = ["decided", "chose", "selected", "adopted", "established"]
+learning_keywords = ["discovered", "learned", "found", "realized", "understood"]
+collaboration_keywords = ["discussed", "explored", "pair-programmed", "reviewed"]
+failure_keywords = ["failed", "didn't work", "broken", "issue", "problem"]
+success_keywords = ["working", "fixed", "resolved", "completed", "achieved"]

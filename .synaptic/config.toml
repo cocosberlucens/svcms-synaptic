@@ -1,0 +1,22 @@
+[obsidian]
+project_name = "svcms-synaptic"
+
+[commit_types.scopes.modules]
+parser = { categories = ["standard", "knowledge"], custom_types = [] }
+memory = { categories = ["standard", "knowledge"], custom_types = [] }
+git = { categories = ["standard", "knowledge"], custom_types = [] }
+config = { categories = ["standard", "knowledge", "collaboration"], custom_types = [] }
+obsidian = { categories = ["standard", "knowledge"], custom_types = ["synced"] }
+commit_types = { categories = ["standard", "knowledge", "meta"], custom_types = [] }
+
+[commit_types.scopes.cross_cutting]
+cli = { categories = ["standard", "meta"], custom_types = [] }
+architecture = { categories = ["knowledge", "collaboration", "meta"], custom_types = [] }
+
+[locations]
+parser = "src/parser/CLAUDE.md"
+memory = "src/memory/CLAUDE.md"
+git = "src/git/CLAUDE.md"
+config = "src/config/CLAUDE.md"
+obsidian = "src/obsidian/CLAUDE.md"
+commit_types = "src/commit_types/CLAUDE.md"
